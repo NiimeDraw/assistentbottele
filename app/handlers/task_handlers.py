@@ -11,6 +11,7 @@ from app.models.user import User
 from app.services.task_service import TaskService
 from app.utils.exceptions import AppError
 from app.utils.logger import get_logger
+from app.utils.timezone_utils import format_local
 
 logger = get_logger(__name__)
 router = Router(name="task")
@@ -22,8 +23,28 @@ async def _render_task_list_text(tasks) -> str:
     lines = ["📚 <b>Daftar Tugas</b>\n"]
     for t in tasks:
         status = "✅" if t.is_done else "⏳"
-        lines.append(f"{status} {t.title} — {t.deadline.strftime('%d-%m-%Y %H:%M')}")
+        lines.append(f"{status} {t.title} — {format_local(t.deadline)}")
     return "\n".join(lines)
+
+
+async def _safe_edit_or_send(callback: CallbackQuery, text: str, reply_markup=None) -> None:
+    """Edit pesan callback jika memungkinkan, kalau tidak fallback kirim pesan baru.
+
+    Menggunakan isinstance check (bukan cuma truthy check) karena
+    callback.message bertipe Message | InaccessibleMessage | None di aiogram 3.x.
+    """
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(text, reply_markup=reply_markup)
+    elif callback.bot is not None:
+        await callback.bot.send_message(callback.from_user.id, text, reply_markup=reply_markup)
+
+
+async def _safe_answer(callback: CallbackQuery, text: str) -> None:
+    """Kirim pesan baru (bukan edit) dengan aman terlepas dari tipe callback.message."""
+    if isinstance(callback.message, Message):
+        await callback.message.answer(text)
+    elif callback.bot is not None:
+        await callback.bot.send_message(callback.from_user.id, text)
 
 
 @router.message(F.text == BTN_TUGAS)
@@ -37,16 +58,16 @@ async def show_task_menu(message: Message, session: AsyncSession, db_user: User)
 async def task_back(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     service = TaskService(session)
     tasks = await service.list_tasks(db_user.id)
-    await callback.message.edit_text(await _render_task_list_text(tasks), reply_markup=task_list_keyboard(tasks))
+    await _safe_edit_or_send(
+        callback, await _render_task_list_text(tasks), task_list_keyboard(tasks)
+    )
     await callback.answer()
 
 
 @router.callback_query(F.data == "task_add")
 async def task_add_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TaskStates.waiting_title)
-    await callback.message.answer(
-        "Masukkan <b>judul tugas</b> (ketik /cancel untuk membatalkan):"
-    )
+    await _safe_answer(callback, "Masukkan <b>judul tugas</b> (ketik /cancel untuk membatalkan):")
     await callback.answer()
 
 
@@ -98,6 +119,9 @@ async def task_add_description(
 
 @router.callback_query(F.data.startswith("task_detail:"))
 async def task_detail(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
+    if not callback.data:
+        await callback.answer()
+        return
     task_id = int(callback.data.split(":")[1])
     service = TaskService(session)
     try:
@@ -109,16 +133,19 @@ async def task_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
     status = "Selesai ✅" if task.is_done else "Belum selesai ⏳"
     text = (
         f"📌 <b>{task.title}</b>\n\n"
-        f"Deadline: {task.deadline.strftime('%d-%m-%Y %H:%M')}\n"
+        f"Deadline: {format_local(task.deadline)}\n"
         f"Status: {status}\n"
         f"Deskripsi: {task.description or '-'}"
     )
-    await callback.message.edit_text(text, reply_markup=task_detail_keyboard(task.id, task.is_done))
+    await _safe_edit_or_send(callback, text, task_detail_keyboard(task.id, task.is_done))
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("task_done:"))
 async def task_mark_done(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
+    if not callback.data:
+        await callback.answer()
+        return
     task_id = int(callback.data.split(":")[1])
     service = TaskService(session)
     try:
@@ -132,15 +159,21 @@ async def task_mark_done(callback: CallbackQuery, session: AsyncSession, db_user
 
 @router.callback_query(F.data.startswith("task_delete:"))
 async def task_delete_prompt(callback: CallbackQuery) -> None:
+    if not callback.data:
+        await callback.answer()
+        return
     task_id = int(callback.data.split(":")[1])
-    await callback.message.edit_text(
-        "Yakin ingin menghapus tugas ini?", reply_markup=confirm_delete_keyboard(task_id)
+    await _safe_edit_or_send(
+        callback, "Yakin ingin menghapus tugas ini?", confirm_delete_keyboard(task_id)
     )
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("task_delete_confirm:"))
 async def task_delete_confirm(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
+    if not callback.data:
+        await callback.answer()
+        return
     task_id = int(callback.data.split(":")[1])
     service = TaskService(session)
     try:
@@ -150,4 +183,4 @@ async def task_delete_confirm(callback: CallbackQuery, session: AsyncSession, db
         return
     await callback.answer("Tugas dihapus 🗑️")
     tasks = await service.list_tasks(db_user.id)
-    await callback.message.edit_text(await _render_task_list_text(tasks), reply_markup=task_list_keyboard(tasks))
+    await _safe_edit_or_send(callback, await _render_task_list_text(tasks), task_list_keyboard(tasks))

@@ -3,7 +3,7 @@ Scheduler pengingat deadline tugas menggunakan APScheduler.
 Berjalan berkala, memeriksa tugas yang deadline-nya sudah dekat,
 lalu mengirim notifikasi Telegram ke pengguna terkait.
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -13,13 +13,17 @@ from app.database.session import get_session
 from app.repositories.user_repository import UserRepository
 from app.services.task_service import TaskService
 from app.utils.logger import get_logger
+from app.utils.timezone_utils import format_local, now_local
 
 logger = get_logger(__name__)
 
 
 async def check_and_send_reminders(bot: Bot) -> None:
     """Job yang dipanggil APScheduler secara berkala."""
-    upper_bound = datetime.now() + timedelta(minutes=settings.REMINDER_BEFORE_MINUTES)
+    # Pakai now_local() (WIB, timezone-aware) bukan datetime.now() (naive),
+    # supaya konsisten dengan kolom deadline yang tz-aware di database,
+    # terlepas dari timezone server tempat bot dijalankan.
+    upper_bound = now_local() + timedelta(minutes=settings.REMINDER_BEFORE_MINUTES)
 
     async with get_session() as session:
         task_service = TaskService(session)
@@ -38,7 +42,7 @@ async def check_and_send_reminders(bot: Bot) -> None:
                     text=(
                         f"⏰ <b>Pengingat Tugas!</b>\n\n"
                         f"📌 {task.title}\n"
-                        f"Deadline: {task.deadline.strftime('%d-%m-%Y %H:%M')}\n\n"
+                        f"Deadline: {format_local(task.deadline)}\n\n"
                         f"Jangan lupa dikerjakan ya!"
                     ),
                 )

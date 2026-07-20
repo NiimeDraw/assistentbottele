@@ -49,3 +49,36 @@ def validate_time(raw: str, field_name: str = "Jam") -> time:
         return datetime.strptime(raw, TIME_FORMAT).time()
     except ValueError:
         raise ValidationError(f"{field_name} formatnya salah. Gunakan format HH:MM, contoh: 08:00")
+
+
+SIMPLE_DATE_FORMAT = "%d-%m-%Y"
+
+
+def validate_date(raw: str, field_name: str = "Tanggal"):
+    """Parsing tanggal (tanpa jam) dengan format DD-MM-YYYY, mengembalikan objek date."""
+    from datetime import datetime
+
+    raw = (raw or "").strip()
+    try:
+        return datetime.strptime(raw, SIMPLE_DATE_FORMAT).date()
+    except ValueError:
+        raise ValidationError(
+            f"{field_name} formatnya salah. Gunakan format DD-MM-YYYY, contoh: 25-12-2026"
+        )
+
+
+def validate_optional_int(raw: str, field_name: str, min_value: int = 0) -> int | None:
+    """
+    Parsing angka opsional. Ketik '-' untuk melewati (hasil None).
+    Dipakai misalnya untuk input 'reminder berapa hari sebelum acara'.
+    """
+    raw = (raw or "").strip()
+    if raw == "-":
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValidationError(f"{field_name} harus berupa angka, atau ketik - untuk melewati.")
+    if value < min_value:
+        raise ValidationError(f"{field_name} tidak boleh kurang dari {min_value}.")
+    return value

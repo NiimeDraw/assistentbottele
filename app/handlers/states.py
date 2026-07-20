@@ -33,3 +33,13 @@ class UserStates(StatesGroup):
     waiting_angkatan = State()
     waiting_semester = State()
     confirm_delete = State()
+
+class AcademicStates(StatesGroup):
+    waiting_title = State()
+    waiting_type = State()
+    waiting_start_date = State()
+    waiting_end_date = State()
+    waiting_location = State()
+    waiting_description = State()
+    waiting_reminder_days = State()
+    waiting_search_keyword = State()

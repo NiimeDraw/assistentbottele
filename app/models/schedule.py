@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import enum
 from datetime import time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, String, Time, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin
 
+if TYPE_CHECKING:
+    # Hanya untuk type-checker (Pylance/mypy), tidak dieksekusi saat runtime.
+    from app.models.user import User
 
 class HariEnum(str, enum.Enum):
     SENIN = "Senin"

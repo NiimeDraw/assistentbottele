@@ -4,8 +4,13 @@ from __future__ import annotations
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from typing import TYPE_CHECKING
+
 from app.database.base import Base, TimestampMixin
 
+if TYPE_CHECKING:
+    # Hanya untuk type-checker (Pylance/mypy), tidak dieksekusi saat runtime.
+    from app.models.user import User
 
 class Note(Base, TimestampMixin):
     __tablename__ = "notes"

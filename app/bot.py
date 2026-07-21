@@ -11,6 +11,7 @@ from app.handlers import (
     profile_handlers,
     schedule_handlers,
     task_handlers,
+    academic_handlers,
 )
 from app.middlewares.db_middleware import DbSessionMiddleware
 from app.middlewares.logging_middleware import LoggingMiddleware
@@ -43,6 +44,7 @@ def create_dispatcher():
 
     # Registrasi router per fitur (modular per handler)
     dp.include_router(common.router)
+    dp.include_router(academic_handlers.router)
     dp.include_router(dashboard_handlers.router)
     dp.include_router(task_handlers.router)
     dp.include_router(schedule_handlers.router)

@@ -27,7 +27,6 @@ router = Router(name="dashboard")
 # Fitur yang belum diimplementasikan — tampilkan placeholder yang ramah,
 # bukan diam saja (silent) seperti sebelumnya.
 _PLACEHOLDER_FEATURES = {
-    "akademik": "📚 Akademik",
     "nilai": "📈 Nilai",
     "keuangan": "💰 Keuangan",
     "dokumen": "📂 Dokumen",

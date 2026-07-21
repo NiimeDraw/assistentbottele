@@ -6,6 +6,8 @@ from typing import List, TYPE_CHECKING
 from sqlalchemy import BigInteger, String, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.models.academic_event import AcademicEvent
+
 if TYPE_CHECKING:
     # Imports for type checkers (avoid circular imports at runtime)
     from app.models.task import Task
@@ -32,6 +34,7 @@ class User(Base, TimestampMixin):
     tasks: Mapped[List["Task"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     schedules: Mapped[List["Schedule"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notes: Mapped[List["Note"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    academic_events: Mapped[List["AcademicEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} telegram_id={self.telegram_id} username={self.username}>"

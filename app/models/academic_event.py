@@ -24,6 +24,7 @@ class EventTypeEnum(str, enum.Enum):
     LIBUR = "Libur"
     WISUDA = "Wisuda"
     SEMINAR = "Seminar"
+    LAINNYA = "Lainnya"
 
 
 # Emoji penanda tiap jenis event, dipakai di tampilan list & detail
@@ -35,6 +36,7 @@ EVENT_TYPE_EMOJI: dict[EventTypeEnum, str] = {
     EventTypeEnum.LIBUR: "🏖️",
     EventTypeEnum.WISUDA: "🎓",
     EventTypeEnum.SEMINAR: "🎤",
+    EventTypeEnum.LAINNYA: "📌",
 }
 
 

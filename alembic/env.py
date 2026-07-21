@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.config.settings import settings
 from app.database.base import Base
 # Import semua model agar terdaftar di metadata sebelum autogenerate
-from app.models import note, schedule, task, user  # noqa: F401
+from app.models import academic_event, note, schedule, task, user  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

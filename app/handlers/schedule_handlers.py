@@ -1,24 +1,40 @@
 """Handler untuk fitur Jadwal Kuliah: daftar, tambah, edit, hapus."""
 from datetime import datetime
 
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# pyrefly: ignore [missing-import]
 from app.handlers.states import ScheduleStates
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import BTN_JADWAL, main_menu_keyboard
+# pyrefly: ignore [missing-import]
 from app.keyboards.schedule_kb import (
     hari_selection_keyboard,
     reminder_selection_keyboard,
     schedule_detail_keyboard,
     schedule_list_keyboard,
 )
+# pyrefly: ignore [missing-import]
 from app.models.schedule import HariEnum
+# pyrefly: ignore [missing-import]
 from app.models.user import User
+# pyrefly: ignore [missing-import]
 from app.services.schedule_service import ScheduleService
+# pyrefly: ignore [missing-import]
 from app.utils.exceptions import AppError
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+# pyrefly: ignore [missing-import]
+from app.utils.timezone_utils import now_local
 
 logger = get_logger(__name__)
 router = Router(name="schedule")
@@ -40,7 +56,8 @@ def _render_schedule_list_text(schedules) -> str:
     lines = ["🗓️ <b>Jadwal Kuliah</b>\n"]
     for s in schedules:
         jam = f"{s.jam_mulai.strftime('%H:%M')}-{s.jam_selesai.strftime('%H:%M')}"
-        lines.append(f"• {s.hari.value} {jam} — {s.mata_kuliah} ({s.ruangan or '-'})")
+        ruangan = f" ({quote(s.ruangan)})" if s.ruangan else ""
+        lines.append(f"• {s.hari.value} {jam} — {quote(s.mata_kuliah)}{ruangan}")
     return "\n".join(lines)
 
 
@@ -209,12 +226,14 @@ async def schedule_detail(callback: CallbackQuery, session: AsyncSession, db_use
         await callback.answer(exc.message, show_alert=True)
         return
 
+    ruangan_str = quote(s.ruangan) if s.ruangan else "-"
+    dosen_str = quote(s.dosen) if s.dosen else "-"
     text = (
-        f"🗓️ <b>{s.mata_kuliah}</b>\n\n"
+        f"🗓️ <b>{quote(s.mata_kuliah)}</b>\n\n"
         f"Hari: {s.hari.value}\n"
         f"Jam: {s.jam_mulai.strftime('%H:%M')} - {s.jam_selesai.strftime('%H:%M')}\n"
-        f"Ruangan: {s.ruangan or '-'}\n"
-        f"Dosen: {s.dosen or '-'}\n"
+        f"Ruangan: {ruangan_str}\n"
+        f"Dosen: {dosen_str}\n"
         f"Pengingat: {str(s.reminder_minutes) + ' menit sebelum' if s.reminder_minutes else '-'}"
     )
     await _safe_edit_or_send(callback, text, schedule_detail_keyboard(s.id))
@@ -242,7 +261,7 @@ async def schedule_delete(callback: CallbackQuery, session: AsyncSession, db_use
 
 @router.callback_query(F.data == "schedule_today")
 async def schedule_today(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
-    today_name = datetime.now().strftime("%A")
+    today_name = now_local().strftime("%A")
     hari_value = _HARI_MAPPING_EN_TO_ID.get(today_name)
 
     service = ScheduleService(session)
@@ -259,7 +278,8 @@ async def schedule_today(callback: CallbackQuery, session: AsyncSession, db_user
     lines = ["🗓️ <b>Jadwal Hari Ini</b>\n"]
     for s in schedules_today:
         jam = f"{s.jam_mulai.strftime('%H:%M')}-{s.jam_selesai.strftime('%H:%M')}"
-        lines.append(f"• {jam} — {s.mata_kuliah} ({s.ruangan or '-'})")
+        ruangan = f" ({quote(s.ruangan)})" if s.ruangan else ""
+        lines.append(f"• {jam} — {quote(s.mata_kuliah)}{ruangan}")
 
     await _safe_edit_or_send(callback, "\n".join(lines), schedule_list_keyboard(all_schedules))
     await callback.answer()
@@ -289,7 +309,8 @@ async def schedule_week(callback: CallbackQuery, session: AsyncSession, db_user:
         lines.append(f"\n<b>{hari}</b>")
         for s in items:
             jam = f"{s.jam_mulai.strftime('%H:%M')}-{s.jam_selesai.strftime('%H:%M')}"
-            lines.append(f"• {jam} — {s.mata_kuliah} ({s.ruangan or '-'})")
+            ruangan = f" ({quote(s.ruangan)})" if s.ruangan else ""
+            lines.append(f"• {jam} — {quote(s.mata_kuliah)}{ruangan}")
 
     await _safe_edit_or_send(callback, "\n".join(lines), schedule_list_keyboard(all_schedules))
     await callback.answer()

@@ -1,14 +1,26 @@
 """Handler untuk manajemen profil pengguna: lihat, edit, hapus akun."""
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import Message
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# pyrefly: ignore [missing-import]
 from app.handlers.states import UserStates
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import main_menu_keyboard, BTN_PROFIL
+# pyrefly: ignore [missing-import]
 from app.keyboards.profile_kb import profile_keyboard, BTN_EDIT_PROFILE, BTN_DELETE_ACCOUNT, BTN_BACK
+# pyrefly: ignore [missing-import]
 from app.models.user import User
+# pyrefly: ignore [missing-import]
 from app.services.user_service import UserService
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -16,16 +28,22 @@ router = Router(name="profile")
 
 
 def _render_profile_text(user: User) -> str:
+    username_line = f"Username: <b>@{quote(user.username)}</b>\n" if user.username else "Username: -\n"
+    fakultas_str = quote(user.fakultas) if user.fakultas else "-"
+    jurusan_str = quote(user.jurusan) if user.jurusan else "-"
+    angkatan_str = str(user.angkatan) if user.angkatan else "-"
+    semester_str = str(user.semester) if user.semester else "-"
+    terdaftar_str = user.created_at.strftime("%d-%m-%Y") if hasattr(user.created_at, "strftime") else str(user.created_at)
+
     return (
         "👤 <b>Profil</b>\n\n"
-        f"Nama: <b>{user.full_name}</b>\n"
-        f"Username: <b>@{user.username}</b>\n" if user.username else f"Username: -\n"
-    ) + (
-        f"Fakultas: <b>{user.fakultas or '-'}</b>\n"
-        f"Jurusan: <b>{user.jurusan or '-'}</b>\n"
-        f"Angkatan: <b>{user.angkatan or '-'}</b>\n"
-        f"Semester: <b>{user.semester or '-'}</b>\n"
-        f"Terdaftar: <b>{user.created_at.isoformat()}</b>"
+        f"Nama: <b>{quote(user.full_name)}</b>\n"
+        f"{username_line}"
+        f"Fakultas: <b>{fakultas_str}</b>\n"
+        f"Jurusan: <b>{jurusan_str}</b>\n"
+        f"Angkatan: <b>{angkatan_str}</b>\n"
+        f"Semester: <b>{semester_str}</b>\n"
+        f"Terdaftar: <b>{terdaftar_str}</b>"
     )
 
 

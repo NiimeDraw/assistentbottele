@@ -1,16 +1,30 @@
 """Handler untuk fitur Tugas (Task): daftar, tambah, tandai selesai, hapus."""
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# pyrefly: ignore [missing-import]
 from app.handlers.states import TaskStates
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import BTN_TUGAS, main_menu_keyboard
+# pyrefly: ignore [missing-import]
 from app.keyboards.task_kb import confirm_delete_keyboard, task_detail_keyboard, task_list_keyboard
+# pyrefly: ignore [missing-import]
 from app.models.user import User
+# pyrefly: ignore [missing-import]
 from app.services.task_service import TaskService
+# pyrefly: ignore [missing-import]
 from app.utils.exceptions import AppError
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+# pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import format_local
 
 logger = get_logger(__name__)
@@ -23,7 +37,7 @@ async def _render_task_list_text(tasks) -> str:
     lines = ["📚 <b>Daftar Tugas</b>\n"]
     for t in tasks:
         status = "✅" if t.is_done else "⏳"
-        lines.append(f"{status} {t.title} — {format_local(t.deadline)}")
+        lines.append(f"{status} {quote(t.title)} — {format_local(t.deadline)}")
     return "\n".join(lines)
 
 
@@ -131,11 +145,12 @@ async def task_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
         return
 
     status = "Selesai ✅" if task.is_done else "Belum selesai ⏳"
+    desc_str = quote(task.description) if task.description else "-"
     text = (
-        f"📌 <b>{task.title}</b>\n\n"
+        f"📌 <b>{quote(task.title)}</b>\n\n"
         f"Deadline: {format_local(task.deadline)}\n"
         f"Status: {status}\n"
-        f"Deskripsi: {task.description or '-'}"
+        f"Deskripsi: {desc_str}"
     )
     await _safe_edit_or_send(callback, text, task_detail_keyboard(task.id, task.is_done))
     await callback.answer()

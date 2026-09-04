@@ -4,15 +4,24 @@ Berjalan berkala, memeriksa tugas yang deadline-nya sudah dekat,
 lalu mengirim notifikasi Telegram ke pengguna terkait.
 """
 from datetime import timedelta
-
+# pyrefly: ignore [missing-import]
 from aiogram import Bot
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+# pyrefly: ignore [missing-import]
 from app.config.settings import settings
+# pyrefly: ignore [missing-import]
 from app.database.session import get_session
+# pyrefly: ignore [missing-import]
 from app.repositories.user_repository import UserRepository
+# pyrefly: ignore [missing-import]
 from app.services.task_service import TaskService
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+# pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import format_local, now_local
 
 logger = get_logger(__name__)
@@ -41,7 +50,7 @@ async def check_and_send_reminders(bot: Bot) -> None:
                     chat_id=user.telegram_id,
                     text=(
                         f"⏰ <b>Pengingat Tugas!</b>\n\n"
-                        f"📌 {task.title}\n"
+                        f"📌 {quote(task.title)}\n"
                         f"Deadline: {format_local(task.deadline)}\n\n"
                         f"Jangan lupa dikerjakan ya!"
                     ),

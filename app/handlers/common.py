@@ -1,11 +1,20 @@
 """Handler umum: /start, /help, dan tombol Bantuan."""
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.filters import Command, CommandStart
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import Message
 
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import BTN_BANTUAN, main_menu_keyboard
+# pyrefly: ignore [missing-import]
 from app.keyboards.dashboard_kb import build_dashboard_kb
+# pyrefly: ignore [missing-import]
 from app.models.user import User
 
 router = Router(name="common")
@@ -29,7 +38,7 @@ async def cmd_start(message: Message, db_user: User) -> None:
     kb = build_dashboard_kb()
     first_name = (db_user.full_name.split()[0] if db_user and db_user.full_name else "User")
     text = (
-        f"Halo {first_name} 👋\n\n"
+        f"Halo {quote(first_name)} 👋\n\n"
         "Selamat datang di Campus Assistant.\n\n"
         "Menu:\n\n"
         "📚 Akademik\n\n"

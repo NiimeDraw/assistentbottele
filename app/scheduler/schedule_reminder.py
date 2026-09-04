@@ -5,16 +5,29 @@ pada waktu (jam_mulai - reminder_minutes) apabila waktu tersebut dekat.
 """
 from datetime import datetime, date, time as dt_time, timedelta
 
+# pyrefly: ignore [missing-import]
 from aiogram import Bot
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from typing import cast
 
+# pyrefly: ignore [missing-import]
 from app.config.settings import settings
+# pyrefly: ignore [missing-import]
 from app.database.session import get_session
-from app.repositories.user_repository import UserRepository
+# pyrefly: ignore [missing-import]
+from app.models.schedule import Schedule
+# pyrefly: ignore [missing-import]
 from app.repositories.schedule_repository import ScheduleRepository
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+# pyrefly: ignore [missing-import]
+from app.utils.timezone_utils import APP_TZ, now_local
 
 logger = get_logger(__name__)
 
@@ -23,7 +36,12 @@ _sent_cache: set[tuple[int, date, int]] = set()
 
 
 async def check_and_send_schedule_reminders(bot: Bot) -> None:
-    now = datetime.now()
+    now = now_local()
+    today = now.date()
+
+    # Bersihkan cache dari hari-hari sebelumnya agar memori tidak bocor
+    _sent_cache.difference_update({k for k in _sent_cache if k[1] < today})
+
     today_name = now.strftime("%A")
     # map English weekday to Bahasa values used in HariEnum
     mapping = {
@@ -39,18 +57,22 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
     if not hari_value:
         return
 
-    upper_bound = now + timedelta(minutes=30)
-
     async with get_session() as session:
-        # cast session to AsyncSession for type checkers
         session = cast(AsyncSession, session)
         sched_repo = ScheduleRepository(session)
-        
-        # Use select-based query instead
+
+        # pyrefly: ignore [missing-import]
         from sqlalchemy import select
+        # pyrefly: ignore [missing-import]
+        from sqlalchemy.orm import selectinload
+        # pyrefly: ignore [missing-import]
         from app.models.schedule import HariEnum as _HariEnum
+
+        # Eager load s.user untuk menghindari MissingGreenlet error di async SQLAlchemy
         result = await session.execute(
-            select(sched_repo.model).where(sched_repo.model.hari == _HariEnum(hari_value))
+            select(sched_repo.model)
+            .options(selectinload(sched_repo.model.user))
+            .where(sched_repo.model.hari == _HariEnum(hari_value))
         )
         schedules_today = list(result.scalars().all())
 
@@ -59,28 +81,42 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
         for s in schedules_today:
             if not s.reminder_minutes:
                 continue
-            # construct today's datetime for jam_mulai
-            start_dt = datetime.combine(now.date(), s.jam_mulai)
+
+            # Gunakan timezone yang sama (APP_TZ / WIB)
+            start_dt = datetime.combine(today, s.jam_mulai, tzinfo=APP_TZ)
             reminder_dt = start_dt - timedelta(minutes=s.reminder_minutes)
-            if reminder_dt < now or reminder_dt > upper_bound:
+
+            # Jika waktu pengingat belum tiba, lewati
+            if reminder_dt > now:
                 continue
-            cache_key = (s.id, now.date(), s.reminder_minutes)
+
+            # Jika waktu pengingat sudah lewat lebih dari interval toleransi (15 menit), jangan spam
+            if (now - reminder_dt) > timedelta(minutes=15):
+                continue
+
+            cache_key = (s.id, today, s.reminder_minutes)
             if cache_key in _sent_cache:
                 continue
-            telegram_id = getattr(s.user, "telegram_id", None)
-            if telegram_id is None:
+
+            user = s.user
+            if not user or not user.telegram_id:
                 continue
-            # send reminder
+
             try:
+                ruangan_str = quote(s.ruangan) if s.ruangan else "-"
+                dosen_str = quote(s.dosen) if s.dosen else "-"
+                matkul_str = quote(s.mata_kuliah)
+                hari_str = s.hari.value if hasattr(s.hari, "value") else str(s.hari)
+
                 await bot.send_message(
-                    chat_id=telegram_id,
+                    chat_id=user.telegram_id,
                     text=(
                         f"⏰ <b>Pengingat Kuliah</b>\n\n"
-                        f"{s.mata_kuliah}\n"
-                        f"Hari: {s.hari.value if hasattr(s.hari, 'value') else s.hari}\n"
+                        f"{matkul_str}\n"
+                        f"Hari: {hari_str}\n"
                         f"Jam: {s.jam_mulai.strftime('%H:%M')} - {s.jam_selesai.strftime('%H:%M')}\n"
-                        f"Ruangan: {s.ruangan or '-'}\n"
-                        f"Dosen: {s.dosen or '-'}\n\n"
+                        f"Ruangan: {ruangan_str}\n"
+                        f"Dosen: {dosen_str}\n\n"
                         f"Pengingat {s.reminder_minutes} menit sebelum kelas."
                     ),
                 )

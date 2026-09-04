@@ -1,10 +1,18 @@
 """Handler untuk fitur Kalender Akademik: daftar, filter bulan, cari, tambah, hapus."""
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# pyrefly: ignore [missing-import]
 from app.handlers.states import AcademicStates
+# pyrefly: ignore [missing-import]
 from app.keyboards.academic_kb import (
     BULAN_ID,
     academic_detail_keyboard,
@@ -12,12 +20,19 @@ from app.keyboards.academic_kb import (
     academic_search_result_keyboard,
     event_type_selection_keyboard,
 )
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import main_menu_keyboard
+# pyrefly: ignore [missing-import]
 from app.models.academic_event import EVENT_TYPE_EMOJI
+# pyrefly: ignore [missing-import]
 from app.models.user import User
+# pyrefly: ignore [missing-import]
 from app.services.academic_event_service import AcademicEventService
+# pyrefly: ignore [missing-import]
 from app.utils.exceptions import AppError
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+# pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import now_local
 
 logger = get_logger(__name__)
@@ -40,7 +55,7 @@ def _render_event_list_text(events, year: int, month: int) -> str:
         tanggal = e.start_date.strftime("%d/%m")
         if e.end_date and e.end_date != e.start_date:
             tanggal += f" - {e.end_date.strftime('%d/%m')}"
-        lines.append(f"{emoji} <b>{e.event_type.value}</b> — {e.title} ({tanggal})")
+        lines.append(f"{emoji} <b>{e.event_type.value}</b> — {quote(e.title)} ({tanggal})")
     return "\n".join(lines)
 
 
@@ -52,12 +67,14 @@ def _render_event_detail_text(e) -> str:
     reminder_text = (
         f"{e.reminder_days_before} hari sebelum acara" if e.reminder_days_before is not None else "-"
     )
+    lokasi_str = quote(e.location) if e.location else "-"
+    desc_str = quote(e.description) if e.description else "-"
     return (
-        f"{emoji} <b>{e.title}</b>\n\n"
+        f"{emoji} <b>{quote(e.title)}</b>\n\n"
         f"Jenis: {e.event_type.value}\n"
         f"Tanggal: {tanggal}\n"
-        f"Lokasi: {e.location or '-'}\n"
-        f"Deskripsi: {e.description or '-'}\n"
+        f"Lokasi: {lokasi_str}\n"
+        f"Deskripsi: {desc_str}\n"
         f"Pengingat: {reminder_text}"
     )
 
@@ -283,8 +300,9 @@ async def akad_search_result(
         )
         return
 
-    lines = [f"🔍 <b>Hasil pencarian:</b> \"{message.text}\"\n"]
+    keyword_safe = quote(message.text or "")
+    lines = [f"🔍 <b>Hasil pencarian:</b> \"{keyword_safe}\"\n"]
     for e in events:
         emoji = EVENT_TYPE_EMOJI.get(e.event_type, "")
-        lines.append(f"{emoji} {e.start_date.strftime('%d/%m/%Y')} — {e.title}")
+        lines.append(f"{emoji} {e.start_date.strftime('%d/%m/%Y')} — {quote(e.title)}")
     await message.answer("\n".join(lines), reply_markup=academic_search_result_keyboard(events))

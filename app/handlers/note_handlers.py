@@ -1,15 +1,28 @@
 """Handler untuk fitur Catatan (Note): daftar, tambah, lihat, hapus."""
+# pyrefly: ignore [missing-import]
 from aiogram import F, Router
+# pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
+# pyrefly: ignore [missing-import]
+from aiogram.html import quote
+# pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# pyrefly: ignore [missing-import]
 from app.handlers.states import NoteStates
+# pyrefly: ignore [missing-import]
 from app.keyboards.main_menu import BTN_CATATAN, main_menu_keyboard
+# pyrefly: ignore [missing-import]
 from app.keyboards.note_kb import note_detail_keyboard, note_list_keyboard
+# pyrefly: ignore [missing-import]
 from app.models.user import User
+# pyrefly: ignore [missing-import]
 from app.services.note_service import NoteService
+# pyrefly: ignore [missing-import]
 from app.utils.exceptions import AppError
+# pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -105,7 +118,7 @@ async def note_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
         await callback.answer(exc.message, show_alert=True)
         return
 
-    text = f"📄 <b>{note.title}</b>\n\n{note.content}"
+    text = f"📄 <b>{quote(note.title)}</b>\n\n{quote(note.content)}"
     await _safe_edit_or_send(callback, text, note_detail_keyboard(note.id))
     await callback.answer()
 

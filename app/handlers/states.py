@@ -51,3 +51,13 @@ class AcademicStates(StatesGroup):
     waiting_description = State()
     waiting_reminder_days = State()
     waiting_search_keyword = State()
+
+
+class NilaiStates(StatesGroup):
+    waiting_mata_kuliah = State()
+    waiting_sks = State()
+    waiting_nilai = State()
+    waiting_semester = State()
+    waiting_target_ipk = State()
+    waiting_sisa_sks = State()
+    waiting_prediksi_data = State()

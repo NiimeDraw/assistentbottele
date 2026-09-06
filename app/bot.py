@@ -4,14 +4,15 @@ Dipisah dari main.py agar mudah diuji dan digunakan ulang (mis. untuk webhook).
 """
 from app.config.settings import settings
 from app.handlers import (
+    academic_handlers,
     ai_handlers,
     common,
     dashboard_handlers,
+    nilai_handlers,
     note_handlers,
     profile_handlers,
     schedule_handlers,
     task_handlers,
-    academic_handlers,
 )
 from app.middlewares.db_middleware import DbSessionMiddleware
 from app.middlewares.error_middleware import ErrorHandlerMiddleware
@@ -57,5 +58,6 @@ def create_dispatcher():
     dp.include_router(note_handlers.router)
     dp.include_router(ai_handlers.router)
     dp.include_router(profile_handlers.router)
+    dp.include_router(nilai_handlers.router)
 
     return dp

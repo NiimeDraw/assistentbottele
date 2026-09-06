@@ -68,3 +68,27 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
         return
     await state.clear()
     await message.answer("Proses dibatalkan.", reply_markup=main_menu_keyboard())
+
+
+@router.message(Command("menu"))
+async def cmd_menu(message: Message, state: FSMContext) -> None:
+    """Kembali ke menu utama, batalkan FSM jika ada."""
+    current_state = await state.get_state()
+    if current_state is not None:
+        await state.clear()
+    await message.answer(
+        "📋 <b>Menu Utama</b>\n\nPilih menu di bawah:",
+        reply_markup=main_menu_keyboard(),
+    )
+
+
+@router.message(Command("back"))
+async def cmd_back(message: Message, state: FSMContext) -> None:
+    """Kembali satu langkah atau ke menu utama."""
+    current_state = await state.get_state()
+    if current_state is not None:
+        await state.clear()
+    await message.answer(
+        "⬅️ Kembali ke menu utama.",
+        reply_markup=main_menu_keyboard(),
+    )

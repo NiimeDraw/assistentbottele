@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.task import Task
     from app.models.schedule import Schedule
     from app.models.note import Note
+    from app.models.nilai import Nilai
 
 from app.database.base import Base, TimestampMixin
 
@@ -35,6 +36,7 @@ class User(Base, TimestampMixin):
     schedules: Mapped[List["Schedule"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notes: Mapped[List["Note"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     academic_events: Mapped[List["AcademicEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    nilai_list: Mapped[List["Nilai"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} telegram_id={self.telegram_id} username={self.username}>"

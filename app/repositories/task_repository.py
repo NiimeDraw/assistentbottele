@@ -25,12 +25,15 @@ class TaskRepository(BaseRepository[Task]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_due_for_reminder(self, upper_bound: datetime) -> list[Task]:
-        """Ambil semua task (semua user) yang deadline-nya sudah dekat & belum diingatkan."""
+    async def list_due_for_reminder(self, lower_bound: datetime, upper_bound: datetime) -> list[Task]:
+        """Ambil semua task (semua user) yang deadline-nya dalam jendela pengingat
+        [lower_bound, upper_bound] & belum diingatkan. Task yang deadlinenya sudah
+        lewat (di luar jendela) tidak diingatkan lagi."""
         stmt = select(Task).where(
             and_(
                 Task.is_done.is_(False),
                 Task.reminder_sent.is_(False),
+                Task.deadline > lower_bound,
                 Task.deadline <= upper_bound,
             )
         )

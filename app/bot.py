@@ -14,7 +14,9 @@ from app.handlers import (
     academic_handlers,
 )
 from app.middlewares.db_middleware import DbSessionMiddleware
+from app.middlewares.error_middleware import ErrorHandlerMiddleware
 from app.middlewares.logging_middleware import LoggingMiddleware
+from app.middlewares.menu_middleware import MenuNavigationMiddleware
 from app.middlewares.user_middleware import UserMiddleware
 
 
@@ -37,10 +39,14 @@ def create_dispatcher():
 
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Urutan middleware penting: logging -> db session -> resolve user
+    # Urutan middleware penting: error handler (terluar) -> logging -> db session -> resolve user
+    dp.update.outer_middleware(ErrorHandlerMiddleware())
     dp.update.outer_middleware(LoggingMiddleware())
     dp.update.outer_middleware(DbSessionMiddleware())
     dp.update.outer_middleware(UserMiddleware())
+
+    # Middleware pencegahan tabrakan FSM dengan tombol menu navigasi
+    dp.message.outer_middleware(MenuNavigationMiddleware())
 
     # Registrasi router per fitur (modular per handler)
     dp.include_router(common.router)

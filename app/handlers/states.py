@@ -18,6 +18,14 @@ class ScheduleStates(StatesGroup):
     waiting_reminder = State()
 
 
+class ScheduleEditStates(StatesGroup):
+    waiting_mata_kuliah = State()
+    waiting_jam_mulai = State()
+    waiting_jam_selesai = State()
+    waiting_ruangan = State()
+    waiting_dosen = State()
+
+
 class NoteStates(StatesGroup):
     waiting_title = State()
     waiting_content = State()

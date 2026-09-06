@@ -6,7 +6,7 @@ Berjalan sekali sehari, memeriksa event yang sudah waktunya diingatkan
 # pyrefly: ignore [missing-import]
 from aiogram import Bot
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 

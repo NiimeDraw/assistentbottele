@@ -4,7 +4,7 @@ from aiogram import F, Router
 # pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
 # pyrefly: ignore [missing-import]
@@ -21,7 +21,7 @@ from app.keyboards.academic_kb import (
     event_type_selection_keyboard,
 )
 # pyrefly: ignore [missing-import]
-from app.keyboards.main_menu import main_menu_keyboard
+from app.keyboards.main_menu import BTN_AKADEMIK, main_menu_keyboard
 # pyrefly: ignore [missing-import]
 from app.models.academic_event import EVENT_TYPE_EMOJI
 # pyrefly: ignore [missing-import]
@@ -33,12 +33,12 @@ from app.utils.exceptions import AppError
 # pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
+from app.utils.telegram_helpers import safe_answer, safe_edit_or_send
+# pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import now_local
 
 logger = get_logger(__name__)
 router = Router(name="academic")
-
-BTN_AKADEMIK = "📚 Kalender Akademik"
 
 
 def _render_month_header(year: int, month: int) -> str:
@@ -79,24 +79,10 @@ def _render_event_detail_text(e) -> str:
     )
 
 
-async def _safe_edit_or_send(callback: CallbackQuery, text: str, reply_markup=None) -> None:
-    if isinstance(callback.message, Message):
-        await callback.message.edit_text(text, reply_markup=reply_markup)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text, reply_markup=reply_markup)
-
-
-async def _safe_answer(callback: CallbackQuery, text: str, reply_markup=None) -> None:
-    if isinstance(callback.message, Message):
-        await callback.message.answer(text, reply_markup=reply_markup)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text, reply_markup=reply_markup)
-
-
 async def _show_month(callback: CallbackQuery, session: AsyncSession, db_user: User, year: int, month: int) -> None:
     service = AcademicEventService(session)
     events = await service.list_events_by_month(db_user.id, year, month)
-    await _safe_edit_or_send(
+    await safe_edit_or_send(
         callback, _render_event_list_text(events, year, month), academic_list_keyboard(events, year, month)
     )
 
@@ -142,7 +128,7 @@ async def akad_bulan(callback: CallbackQuery, session: AsyncSession, db_user: Us
 async def akad_add_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
     await state.set_state(AcademicStates.waiting_title)
-    await _safe_answer(callback, "Masukkan <b>judul event</b> (ketik /cancel untuk membatalkan):")
+    await safe_answer(callback, "Masukkan <b>judul event</b> (ketik /cancel untuk membatalkan):")
     await callback.answer()
 
 
@@ -164,7 +150,7 @@ async def akad_add_type(callback: CallbackQuery, state: FSMContext) -> None:
     event_type = callback.data.split(":", 1)[1]
     await state.update_data(event_type=event_type)
     await state.set_state(AcademicStates.waiting_start_date)
-    await _safe_answer(
+    await safe_answer(
         callback, "Masukkan <b>tanggal mulai</b> (format DD-MM-YYYY), contoh: 25-08-2026"
     )
     await callback.answer()
@@ -250,7 +236,7 @@ async def akad_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
     except AppError as exc:
         await callback.answer(exc.message, show_alert=True)
         return
-    await _safe_edit_or_send(
+    await safe_edit_or_send(
         callback, _render_event_detail_text(event), academic_detail_keyboard(event.id)
     )
     await callback.answer()
@@ -278,7 +264,7 @@ async def akad_delete(callback: CallbackQuery, session: AsyncSession, db_user: U
 @router.callback_query(F.data == "akad_cari")
 async def akad_search_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(AcademicStates.waiting_search_keyword)
-    await _safe_answer(callback, "Ketik <b>kata kunci</b> judul event yang ingin dicari:")
+    await safe_answer(callback, "Ketik <b>kata kunci</b> judul event yang ingin dicari:")
     await callback.answer()
 
 

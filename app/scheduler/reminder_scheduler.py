@@ -7,7 +7,7 @@ from datetime import timedelta
 # pyrefly: ignore [missing-import]
 from aiogram import Bot
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -33,12 +33,14 @@ async def check_and_send_reminders(bot: Bot) -> None:
     # supaya konsisten dengan kolom deadline yang tz-aware di database,
     # terlepas dari timezone server tempat bot dijalankan.
     upper_bound = now_local() + timedelta(minutes=settings.REMINDER_BEFORE_MINUTES)
+    # Deadline yang sudah lewat tidak diingatkan lagi (mis. bot sempat mati)
+    lower_bound = now_local()
 
     async with get_session() as session:
         task_service = TaskService(session)
         user_repo = UserRepository(session)
 
-        due_tasks = await task_service.list_due_for_reminder(upper_bound)
+        due_tasks = await task_service.list_due_for_reminder(lower_bound, upper_bound)
         logger.info("Ditemukan %d tugas yang perlu diingatkan", len(due_tasks))
 
         for task in due_tasks:

@@ -44,5 +44,5 @@ class TaskService:
         task = await self.get_task(task_id, user_id)
         await self.repo.delete(task)
 
-    async def list_due_for_reminder(self, upper_bound: datetime) -> list[Task]:
-        return await self.repo.list_due_for_reminder(upper_bound)
+    async def list_due_for_reminder(self, lower_bound: datetime, upper_bound: datetime) -> list[Task]:
+        return await self.repo.list_due_for_reminder(lower_bound, upper_bound)

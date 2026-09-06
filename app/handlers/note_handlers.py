@@ -4,7 +4,7 @@ from aiogram import F, Router
 # pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
 # pyrefly: ignore [missing-import]
@@ -24,6 +24,7 @@ from app.services.note_service import NoteService
 from app.utils.exceptions import AppError
 # pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
+from app.utils.telegram_helpers import safe_answer, safe_edit_or_send
 
 logger = get_logger(__name__)
 router = Router(name="note")
@@ -33,26 +34,6 @@ def _render_note_list_text(notes) -> str:
     if not notes:
         return "📝 <b>Catatan</b>\n\nBelum ada catatan. Tambahkan catatan pertamamu!"
     return "📝 <b>Catatan</b>\n\nPilih catatan di bawah untuk melihat isinya."
-
-
-async def _safe_edit_or_send(callback: CallbackQuery, text: str, reply_markup=None) -> None:
-    """Edit pesan callback jika memungkinkan, kalau tidak fallback kirim pesan baru.
-
-    Menggunakan isinstance check (bukan cuma truthy check) karena
-    callback.message bertipe Message | InaccessibleMessage | None di aiogram 3.x.
-    """
-    if isinstance(callback.message, Message):
-        await callback.message.edit_text(text, reply_markup=reply_markup)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text, reply_markup=reply_markup)
-
-
-async def _safe_answer(callback: CallbackQuery, text: str) -> None:
-    """Kirim pesan baru (bukan edit) dengan aman terlepas dari tipe callback.message."""
-    if isinstance(callback.message, Message):
-        await callback.message.answer(text)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text)
 
 
 @router.message(F.text == BTN_CATATAN)
@@ -66,14 +47,14 @@ async def show_note_menu(message: Message, session: AsyncSession, db_user: User)
 async def note_back(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     service = NoteService(session)
     notes = await service.list_notes(db_user.id)
-    await _safe_edit_or_send(callback, _render_note_list_text(notes), note_list_keyboard(notes))
+    await safe_edit_or_send(callback, _render_note_list_text(notes), note_list_keyboard(notes))
     await callback.answer()
 
 
 @router.callback_query(F.data == "note_add")
 async def note_add_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(NoteStates.waiting_title)
-    await _safe_answer(callback, "Masukkan <b>judul catatan</b> (ketik /cancel untuk membatalkan):")
+    await safe_answer(callback, "Masukkan <b>judul catatan</b> (ketik /cancel untuk membatalkan):")
     await callback.answer()
 
 
@@ -119,7 +100,7 @@ async def note_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
         return
 
     text = f"📄 <b>{quote(note.title)}</b>\n\n{quote(note.content)}"
-    await _safe_edit_or_send(callback, text, note_detail_keyboard(note.id))
+    await safe_edit_or_send(callback, text, note_detail_keyboard(note.id))
     await callback.answer()
 
 
@@ -137,4 +118,4 @@ async def note_delete(callback: CallbackQuery, session: AsyncSession, db_user: U
         return
     await callback.answer("Catatan dihapus 🗑️")
     notes = await service.list_notes(db_user.id)
-    await _safe_edit_or_send(callback, _render_note_list_text(notes), note_list_keyboard(notes))
+    await safe_edit_or_send(callback, _render_note_list_text(notes), note_list_keyboard(notes))

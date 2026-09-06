@@ -4,7 +4,7 @@ from aiogram import F, Router
 # pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from aiogram.types import CallbackQuery, Message
 # pyrefly: ignore [missing-import]
@@ -25,6 +25,8 @@ from app.utils.exceptions import AppError
 # pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
+from app.utils.telegram_helpers import safe_answer, safe_edit_or_send
+# pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import format_local
 
 logger = get_logger(__name__)
@@ -41,26 +43,6 @@ async def _render_task_list_text(tasks) -> str:
     return "\n".join(lines)
 
 
-async def _safe_edit_or_send(callback: CallbackQuery, text: str, reply_markup=None) -> None:
-    """Edit pesan callback jika memungkinkan, kalau tidak fallback kirim pesan baru.
-
-    Menggunakan isinstance check (bukan cuma truthy check) karena
-    callback.message bertipe Message | InaccessibleMessage | None di aiogram 3.x.
-    """
-    if isinstance(callback.message, Message):
-        await callback.message.edit_text(text, reply_markup=reply_markup)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text, reply_markup=reply_markup)
-
-
-async def _safe_answer(callback: CallbackQuery, text: str) -> None:
-    """Kirim pesan baru (bukan edit) dengan aman terlepas dari tipe callback.message."""
-    if isinstance(callback.message, Message):
-        await callback.message.answer(text)
-    elif callback.bot is not None:
-        await callback.bot.send_message(callback.from_user.id, text)
-
-
 @router.message(F.text == BTN_TUGAS)
 async def show_task_menu(message: Message, session: AsyncSession, db_user: User) -> None:
     service = TaskService(session)
@@ -72,7 +54,7 @@ async def show_task_menu(message: Message, session: AsyncSession, db_user: User)
 async def task_back(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     service = TaskService(session)
     tasks = await service.list_tasks(db_user.id)
-    await _safe_edit_or_send(
+    await safe_edit_or_send(
         callback, await _render_task_list_text(tasks), task_list_keyboard(tasks)
     )
     await callback.answer()
@@ -81,7 +63,7 @@ async def task_back(callback: CallbackQuery, session: AsyncSession, db_user: Use
 @router.callback_query(F.data == "task_add")
 async def task_add_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TaskStates.waiting_title)
-    await _safe_answer(callback, "Masukkan <b>judul tugas</b> (ketik /cancel untuk membatalkan):")
+    await safe_answer(callback, "Masukkan <b>judul tugas</b> (ketik /cancel untuk membatalkan):")
     await callback.answer()
 
 
@@ -152,7 +134,7 @@ async def task_detail(callback: CallbackQuery, session: AsyncSession, db_user: U
         f"Status: {status}\n"
         f"Deskripsi: {desc_str}"
     )
-    await _safe_edit_or_send(callback, text, task_detail_keyboard(task.id, task.is_done))
+    await safe_edit_or_send(callback, text, task_detail_keyboard(task.id, task.is_done))
     await callback.answer()
 
 
@@ -178,7 +160,7 @@ async def task_delete_prompt(callback: CallbackQuery) -> None:
         await callback.answer()
         return
     task_id = int(callback.data.split(":")[1])
-    await _safe_edit_or_send(
+    await safe_edit_or_send(
         callback, "Yakin ingin menghapus tugas ini?", confirm_delete_keyboard(task_id)
     )
     await callback.answer()
@@ -198,4 +180,4 @@ async def task_delete_confirm(callback: CallbackQuery, session: AsyncSession, db
         return
     await callback.answer("Tugas dihapus 🗑️")
     tasks = await service.list_tasks(db_user.id)
-    await _safe_edit_or_send(callback, await _render_task_list_text(tasks), task_list_keyboard(tasks))
+    await safe_edit_or_send(callback, await _render_task_list_text(tasks), task_list_keyboard(tasks))

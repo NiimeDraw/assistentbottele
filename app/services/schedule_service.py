@@ -63,7 +63,9 @@ class ScheduleService:
         allowed = {"mata_kuliah", "hari", "jam_mulai", "jam_selesai", "ruangan", "dosen", "reminder_minutes"}
         updated = False
 
-        # handle conversions
+        if "mata_kuliah" in kwargs and kwargs["mata_kuliah"] is not None:
+            kwargs["mata_kuliah"] = validate_non_empty(kwargs["mata_kuliah"], "Nama mata kuliah")
+
         if "hari" in kwargs and kwargs["hari"] is not None:
             try:
                 kwargs["hari"] = HariEnum(kwargs["hari"]) if not isinstance(kwargs["hari"], HariEnum) else kwargs["hari"]
@@ -71,9 +73,21 @@ class ScheduleService:
                 raise ValidationError("Hari tidak valid untuk update.")
 
         if "jam_mulai" in kwargs and kwargs["jam_mulai"]:
-            kwargs["jam_mulai"] = validate_time(kwargs["jam_mulai"], "Jam mulai")
+            if isinstance(kwargs["jam_mulai"], str):
+                kwargs["jam_mulai"] = validate_time(kwargs["jam_mulai"], "Jam mulai")
         if "jam_selesai" in kwargs and kwargs["jam_selesai"]:
-            kwargs["jam_selesai"] = validate_time(kwargs["jam_selesai"], "Jam selesai")
+            if isinstance(kwargs["jam_selesai"], str):
+                kwargs["jam_selesai"] = validate_time(kwargs["jam_selesai"], "Jam selesai")
+
+        effective_jam_mulai = kwargs.get("jam_mulai", schedule.jam_mulai)
+        effective_jam_selesai = kwargs.get("jam_selesai", schedule.jam_selesai)
+        if effective_jam_selesai <= effective_jam_mulai:
+            raise ValidationError("Jam selesai harus lebih besar dari jam mulai.")
+
+        if "ruangan" in kwargs:
+            kwargs["ruangan"] = (kwargs["ruangan"] or "").strip() or None
+        if "dosen" in kwargs:
+            kwargs["dosen"] = (kwargs["dosen"] or "").strip() or None
 
         for k, v in kwargs.items():
             if k in allowed and getattr(schedule, k) != v:

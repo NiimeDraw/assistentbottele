@@ -6,7 +6,7 @@ from aiogram.filters import Command, CommandStart
 # pyrefly: ignore [missing-import]
 from aiogram.fsm.context import FSMContext
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from aiogram.types import Message
 

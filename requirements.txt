@@ -1,8 +1,8 @@
-aiogram==3.13.1
-SQLAlchemy==2.0.35
-asyncpg==0.29.0
-alembic==1.13.2
-APScheduler==3.10.4
-python-dotenv==1.0.1
-pydantic-settings==2.4.0
-openai==1.51.0
+aiogram==3.30.0
+SQLAlchemy==2.0.51
+asyncpg==0.30.0
+alembic==1.18.5
+APScheduler==3.11.3
+python-dotenv==1.2.2
+pydantic-settings==2.14.2
+openai==2.46.0

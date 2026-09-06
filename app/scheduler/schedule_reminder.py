@@ -8,7 +8,7 @@ from datetime import datetime, date, time as dt_time, timedelta
 # pyrefly: ignore [missing-import]
 from aiogram import Bot
 # pyrefly: ignore [missing-import]
-from aiogram.html import quote
+from app.utils.html import quote
 # pyrefly: ignore [missing-import]
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # pyrefly: ignore [missing-import]
@@ -21,7 +21,7 @@ from app.config.settings import settings
 # pyrefly: ignore [missing-import]
 from app.database.session import get_session
 # pyrefly: ignore [missing-import]
-from app.models.schedule import Schedule
+from app.models.schedule import hari_from_date
 # pyrefly: ignore [missing-import]
 from app.repositories.schedule_repository import ScheduleRepository
 # pyrefly: ignore [missing-import]
@@ -42,20 +42,7 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
     # Bersihkan cache dari hari-hari sebelumnya agar memori tidak bocor
     _sent_cache.difference_update({k for k in _sent_cache if k[1] < today})
 
-    today_name = now.strftime("%A")
-    # map English weekday to Bahasa values used in HariEnum
-    mapping = {
-        "Monday": "Senin",
-        "Tuesday": "Selasa",
-        "Wednesday": "Rabu",
-        "Thursday": "Kamis",
-        "Friday": "Jumat",
-        "Saturday": "Sabtu",
-        "Sunday": "Minggu",
-    }
-    hari_value = mapping.get(today_name)
-    if not hari_value:
-        return
+    hari_enum = hari_from_date(today)
 
     async with get_session() as session:
         session = cast(AsyncSession, session)
@@ -65,14 +52,12 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
         from sqlalchemy import select
         # pyrefly: ignore [missing-import]
         from sqlalchemy.orm import selectinload
-        # pyrefly: ignore [missing-import]
-        from app.models.schedule import HariEnum as _HariEnum
 
         # Eager load s.user untuk menghindari MissingGreenlet error di async SQLAlchemy
         result = await session.execute(
             select(sched_repo.model)
             .options(selectinload(sched_repo.model.user))
-            .where(sched_repo.model.hari == _HariEnum(hari_value))
+            .where(sched_repo.model.hari == hari_enum)
         )
         schedules_today = list(result.scalars().all())
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import enum
-from datetime import time
+from datetime import date, time
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, String, Time, Integer
@@ -22,6 +22,17 @@ class HariEnum(str, enum.Enum):
     JUMAT = "Jumat"
     SABTU = "Sabtu"
     MINGGU = "Minggu"
+
+
+# Pemetaan indeks weekday Python (isoweekday: Senin=1 s.d. Minggu=7) ke HariEnum
+_HARI_BY_ISOWEEKDAY = (
+    "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu",
+)
+
+
+def hari_from_date(d: date) -> HariEnum:
+    """Konversi objek date ke HariEnum, terlepas dari locale server."""
+    return HariEnum(_HARI_BY_ISOWEEKDAY[d.isoweekday() - 1])
 
 
 class Schedule(Base, TimestampMixin):

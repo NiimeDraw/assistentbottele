@@ -3,6 +3,7 @@
 Modul ini menyediakan fungsi utilitas terpusat untuk menangani
 callback query secara aman, menghindari duplikasi di seluruh handler.
 """
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, Message
 
 
@@ -18,7 +19,12 @@ async def safe_edit_or_send(
     lolos pengecekan tipe statis (Pylance).
     """
     if isinstance(callback.message, Message):
-        await callback.message.edit_text(text, reply_markup=reply_markup)
+        try:
+            await callback.message.edit_text(text, reply_markup=reply_markup)
+        except TelegramBadRequest as e:
+            if "message is not modified" in str(e):
+                return  # Tidak ada perubahan, abaikan saja
+            raise
     elif callback.bot is not None:
         await callback.bot.send_message(
             callback.from_user.id, text, reply_markup=reply_markup

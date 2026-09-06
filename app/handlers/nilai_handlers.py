@@ -127,11 +127,12 @@ async def nilai_detail(
 @router.callback_query(F.data == "nilai_add")
 async def nilai_add_start(callback: CallbackQuery, state: FSMContext) -> None:
     """Mulai proses tambah nilai."""
-    await state.set_state(NilaiStates.waiting_mata_kuliah)
+    # Kirim pesan dulu, baru set state — agar state tidak menggantung jika kirim gagal
     await safe_answer(
         callback,
         "Masukkan <b>nama mata kuliah</b> (ketik /cancel untuk membatalkan):",
     )
+    await state.set_state(NilaiStates.waiting_mata_kuliah)
     await callback.answer()
 
 

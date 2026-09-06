@@ -11,7 +11,7 @@ from app.utils.html import quote
 from aiogram.types import Message
 
 # pyrefly: ignore [missing-import]
-from app.keyboards.main_menu import BTN_BANTUAN, main_menu_keyboard
+from app.keyboards.main_menu import BTN_BANTUAN, BTN_NILAI, main_menu_keyboard
 # pyrefly: ignore [missing-import]
 from app.keyboards.dashboard_kb import build_dashboard_kb
 # pyrefly: ignore [missing-import]
@@ -79,6 +79,16 @@ async def cmd_menu(message: Message, state: FSMContext) -> None:
     await message.answer(
         "📋 <b>Menu Utama</b>\n\nPilih menu di bawah:",
         reply_markup=main_menu_keyboard(),
+    )
+
+
+@router.message(F.text.in_({BTN_NILAI, "📈 IPK Calculator"}))
+async def btn_nilai(message: Message) -> None:
+    """Buka IPK Calculator dari Reply Keyboard (kompatibel dengan nama lama & baru)."""
+    from app.keyboards.nilai_kb import nilai_menu_keyboard
+    await message.answer(
+        "<b>📈 IPK Calculator</b>\n\nPilih menu di bawah:",
+        reply_markup=nilai_menu_keyboard(),
     )
 
 

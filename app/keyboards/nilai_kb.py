@@ -25,7 +25,7 @@ def nilai_menu_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="📚 Riwayat", callback_data="nilai_riwayat"),
     )
     builder.row(
-        InlineKeyboardButton(text="⬅️ Kembali", callback_data="menu_back"),
+        InlineKeyboardButton(text="⬅️ Kembali", callback_data="nilai_menu"),
     )
     return builder.as_markup()
 

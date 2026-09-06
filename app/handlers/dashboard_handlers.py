@@ -27,7 +27,6 @@ router = Router(name="dashboard")
 # Fitur yang belum diimplementasikan — tampilkan placeholder yang ramah,
 # bukan diam saja (silent) seperti sebelumnya.
 _PLACEHOLDER_FEATURES = {
-    "nilai": "📈 Nilai",
     "keuangan": "💰 Keuangan",
     "dokumen": "📂 Dokumen",
     "pengaturan": "⚙️ Pengaturan",
@@ -62,6 +61,18 @@ async def dashboard_ai(callback: CallbackQuery, state: FSMContext) -> None:
     if callback.message:
         await callback.message.answer(
             "🤖 Silakan ketik pertanyaan akademikmu. Ketik /cancel untuk kembali ke menu."
+        )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "dashboard:nilai")
+async def dashboard_nilai(callback: CallbackQuery) -> None:
+    """Teruskan ke menu IPK Calculator."""
+    from app.keyboards.nilai_kb import nilai_menu_keyboard
+    if callback.message:
+        await callback.message.answer(
+            "<b>📈 IPK Calculator</b>\n\nPilih menu di bawah:",
+            reply_markup=nilai_menu_keyboard(),
         )
     await callback.answer()
 

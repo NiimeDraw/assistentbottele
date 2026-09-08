@@ -33,6 +33,7 @@ from app.utils.html import quote
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
 from app.utils.telegram_helpers import safe_answer, safe_edit_or_send
+from app.utils.validators import validate_grade, validate_positive_int
 
 logger = get_logger(__name__)
 router = Router(name="nilai")
@@ -149,10 +150,8 @@ async def nilai_add_mk(message: Message, state: FSMContext) -> None:
 @router.message(NilaiStates.waiting_sks)
 async def nilai_add_sks(message: Message, state: FSMContext) -> None:
     try:
-        sks = int(message.text or "")
-        if sks <= 0:
-            raise ValueError
-    except ValueError:
+        sks = validate_positive_int(int(message.text or ""), "SKS")
+    except (ValueError, AppError):
         await message.answer("SKS harus berupa angka positif. Masukkan ulang:")
         return
     await state.update_data(sks=sks)
@@ -166,10 +165,8 @@ async def nilai_add_sks(message: Message, state: FSMContext) -> None:
 @router.message(NilaiStates.waiting_nilai)
 async def nilai_add_nilai(message: Message, state: FSMContext) -> None:
     try:
-        nilai = float(message.text or "")
-        if nilai < 0 or nilai > 4.0:
-            raise ValueError
-    except ValueError:
+        nilai = validate_grade(float(message.text or ""))
+    except (ValueError, AppError):
         await message.answer(
             "Nilai harus berupa angka antara 0.00 – 4.00. Masukkan ulang:"
         )
@@ -184,10 +181,8 @@ async def nilai_add_semester(
     message: Message, state: FSMContext, session: AsyncSession, db_user: User
 ) -> None:
     try:
-        semester = int(message.text or "")
-        if semester <= 0:
-            raise ValueError
-    except ValueError:
+        semester = validate_positive_int(int(message.text or ""), "Semester")
+    except (ValueError, AppError):
         await message.answer("Semester harus berupa angka positif. Masukkan ulang:")
         return
 
@@ -364,10 +359,8 @@ async def nilai_target_start(callback: CallbackQuery, state: FSMContext) -> None
 @router.message(NilaiStates.waiting_target_ipk)
 async def nilai_target_ipk(message: Message, state: FSMContext) -> None:
     try:
-        target = float(message.text or "")
-        if target < 0 or target > 4.0:
-            raise ValueError
-    except ValueError:
+        target = validate_grade(float(message.text or ""), "Target IPK")
+    except (ValueError, AppError):
         await message.answer(
             "Target IPK harus antara 0.00 – 4.00. Masukkan ulang:"
         )
@@ -384,10 +377,8 @@ async def nilai_target_result(
     message: Message, state: FSMContext, session: AsyncSession, db_user: User
 ) -> None:
     try:
-        sisa_sks = int(message.text or "")
-        if sisa_sks <= 0:
-            raise ValueError
-    except ValueError:
+        sisa_sks = validate_positive_int(int(message.text or ""), "Sisa SKS")
+    except (ValueError, AppError):
         await message.answer("Sisa SKS harus berupa angka positif. Masukkan ulang:")
         return
 
@@ -455,12 +446,14 @@ async def nilai_prediksi_result(
             mk = parts[0]
             sks = int(parts[1])
             pred_nilai = float(parts[2])
-            if sks <= 0 or pred_nilai < 0 or pred_nilai > 4.0:
-                raise ValueError
+            sks = validate_positive_int(sks, "SKS")
+            pred_nilai = validate_grade(pred_nilai, "Prediksi nilai")
+            if not mk:
+                raise AppError("Mata kuliah tidak boleh kosong.")
             rencana.append(
                 {"mata_kuliah": mk, "sks": sks, "prediksi_nilai": pred_nilai}
             )
-        except ValueError:
+        except (ValueError, AppError):
             errors.append(
                 f"Baris {i}: SKS harus > 0, nilai harus 0.00–4.00"
             )
@@ -491,6 +484,7 @@ async def nilai_prediksi_result(
     lines.append(f"Tambahan Bobot: {result['tambahan_bobot']}")
     lines.append(f"Total SKS: {result['total_sks']}")
     lines.append(f"\n🎯 <b>Prediksi IPK: {result['prediksi_ipk']:.2f}</b>")
+    lines.append(f"Perubahan IPK: <b>{result['perubahan_ipk']:+.2f}</b>")
 
     await message.answer("\n".join(lines), reply_markup=main_menu_keyboard())
 

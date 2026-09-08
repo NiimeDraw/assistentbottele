@@ -5,7 +5,7 @@ import enum
 from datetime import date, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, ForeignKey, String, Time, Integer
+from sqlalchemy import Date, Enum, ForeignKey, String, Time, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin
@@ -50,6 +50,7 @@ class Schedule(Base, TimestampMixin):
     # Dosen dan pengaturan reminder (dalam menit sebelum jam_mulai)
     dosen: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reminder_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_reminder_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="schedules")
 

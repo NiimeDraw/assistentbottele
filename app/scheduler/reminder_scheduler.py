@@ -23,6 +23,7 @@ from app.services.task_service import TaskService
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import format_local, now_local
+from app.utils.telegram_helpers import send_with_retry
 
 logger = get_logger(__name__)
 
@@ -48,14 +49,18 @@ async def check_and_send_reminders(bot: Bot) -> None:
             if not user:
                 continue
             try:
-                await bot.send_message(
-                    chat_id=user.telegram_id,
-                    text=(
-                        f"⏰ <b>Pengingat Tugas!</b>\n\n"
-                        f"📌 {quote(task.title)}\n"
-                        f"Deadline: {format_local(task.deadline)}\n\n"
-                        f"Jangan lupa dikerjakan ya!"
+                await send_with_retry(
+                    lambda: bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=(
+                            f"⏰ <b>Pengingat Tugas!</b>\n\n"
+                            f"📌 {quote(task.title)}\n"
+                            f"Deadline: {format_local(task.deadline)}\n\n"
+                            f"Jangan lupa dikerjakan ya!"
+                        ),
                     ),
+                    settings.REMINDER_SEND_RETRIES,
+                    settings.REMINDER_RETRY_DELAY_SECONDS,
                 )
                 task.reminder_sent = True
             except Exception:  # noqa: BLE001

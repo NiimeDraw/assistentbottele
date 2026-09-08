@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.note import Note
+from app.keyboards.dashboard_kb import dashboard_button
 
 
 def note_list_keyboard(notes: list[Note]) -> InlineKeyboardMarkup:
@@ -12,6 +13,7 @@ def note_list_keyboard(notes: list[Note]) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text=f"📄 {note.title}", callback_data=f"note_detail:{note.id}")
         )
     builder.row(InlineKeyboardButton(text="➕ Tambah Catatan", callback_data="note_add"))
+    builder.row(dashboard_button())
     return builder.as_markup()
 
 

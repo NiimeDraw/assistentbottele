@@ -4,7 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.schedule import HariEnum, Schedule
 from app.repositories.schedule_repository import ScheduleRepository
 from app.utils.exceptions import NotFoundError, ValidationError
-from app.utils.validators import validate_non_empty, validate_time
+from app.utils.validators import (
+    validate_non_empty,
+    validate_reminder_minutes,
+    validate_time,
+)
 
 
 class ScheduleService:
@@ -32,6 +36,7 @@ class ScheduleService:
         jam_selesai = validate_time(jam_selesai_raw, "Jam selesai")
         if jam_selesai <= jam_mulai:
             raise ValidationError("Jam selesai harus lebih besar dari jam mulai.")
+        reminder_minutes = validate_reminder_minutes(reminder_minutes)
 
         schedule = Schedule(
             user_id=user_id,
@@ -69,8 +74,13 @@ class ScheduleService:
         if "hari" in kwargs and kwargs["hari"] is not None:
             try:
                 kwargs["hari"] = HariEnum(kwargs["hari"]) if not isinstance(kwargs["hari"], HariEnum) else kwargs["hari"]
-            except Exception:
+            except ValueError:
                 raise ValidationError("Hari tidak valid untuk update.")
+
+        if "reminder_minutes" in kwargs:
+            kwargs["reminder_minutes"] = validate_reminder_minutes(
+                kwargs["reminder_minutes"]
+            )
 
         if "jam_mulai" in kwargs and kwargs["jam_mulai"]:
             if isinstance(kwargs["jam_mulai"], str):
@@ -94,5 +104,10 @@ class ScheduleService:
                 setattr(schedule, k, v)
                 updated = True
         if updated:
+            if any(
+                field in kwargs
+                for field in ("hari", "jam_mulai", "reminder_minutes")
+            ):
+                schedule.last_reminder_date = None
             await self.repo.session.flush()
         return schedule

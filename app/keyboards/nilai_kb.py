@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.nilai import Nilai
+from app.keyboards.dashboard_kb import dashboard_button
 
 
 def nilai_menu_keyboard() -> InlineKeyboardMarkup:
@@ -27,6 +28,7 @@ def nilai_menu_keyboard() -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(text="⬅️ Kembali", callback_data="nilai_menu"),
     )
+    builder.row(dashboard_button())
     return builder.as_markup()
 
 

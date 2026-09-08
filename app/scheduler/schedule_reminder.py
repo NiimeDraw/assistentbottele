@@ -28,6 +28,7 @@ from app.repositories.schedule_repository import ScheduleRepository
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import APP_TZ, now_local
+from app.utils.telegram_helpers import send_with_retry
 
 logger = get_logger(__name__)
 
@@ -82,6 +83,9 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
             cache_key = (s.id, today, s.reminder_minutes)
             if cache_key in _sent_cache:
                 continue
+            if s.last_reminder_date == today:
+                _sent_cache.add(cache_key)
+                continue
 
             user = s.user
             if not user or not user.telegram_id:
@@ -93,18 +97,23 @@ async def check_and_send_schedule_reminders(bot: Bot) -> None:
                 matkul_str = quote(s.mata_kuliah)
                 hari_str = s.hari.value if hasattr(s.hari, "value") else str(s.hari)
 
-                await bot.send_message(
-                    chat_id=user.telegram_id,
-                    text=(
-                        f"⏰ <b>Pengingat Kuliah</b>\n\n"
-                        f"{matkul_str}\n"
-                        f"Hari: {hari_str}\n"
-                        f"Jam: {s.jam_mulai.strftime('%H:%M')} - {s.jam_selesai.strftime('%H:%M')}\n"
-                        f"Ruangan: {ruangan_str}\n"
-                        f"Dosen: {dosen_str}\n\n"
-                        f"Pengingat {s.reminder_minutes} menit sebelum kelas."
+                await send_with_retry(
+                    lambda: bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=(
+                            f"⏰ <b>Pengingat Kuliah</b>\n\n"
+                            f"{matkul_str}\n"
+                            f"Hari: {hari_str}\n"
+                            f"Jam: {s.jam_mulai.strftime('%H:%M')} - {s.jam_selesai.strftime('%H:%M')}\n"
+                            f"Ruangan: {ruangan_str}\n"
+                            f"Dosen: {dosen_str}\n\n"
+                            f"Pengingat {s.reminder_minutes} menit sebelum kelas."
+                        ),
                     ),
+                    settings.REMINDER_SEND_RETRIES,
+                    settings.REMINDER_RETRY_DELAY_SECONDS,
                 )
+                s.last_reminder_date = today
                 _sent_cache.add(cache_key)
             except Exception:
                 logger.exception("Gagal mengirim pengingat jadwal untuk schedule_id=%s", s.id)

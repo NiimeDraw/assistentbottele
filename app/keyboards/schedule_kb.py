@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.schedule import HariEnum, Schedule
+from app.keyboards.dashboard_kb import dashboard_button
 
 
 def hari_selection_keyboard() -> InlineKeyboardMarkup:
@@ -25,6 +26,7 @@ def schedule_list_keyboard(schedules: list[Schedule]) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="📆 Lihat Minggu Ini", callback_data="schedule_week"),
     )
     builder.row(InlineKeyboardButton(text="➕ Tambah Jadwal", callback_data="schedule_add"))
+    builder.row(dashboard_button())
     return builder.as_markup()
 
 
@@ -90,4 +92,3 @@ def edit_reminder_selection_keyboard(schedule_id: int) -> InlineKeyboardMarkup:
     builder.row(InlineKeyboardButton(text="Tidak ada", callback_data=f"sched_set_rem:{schedule_id}:0"))
     builder.row(InlineKeyboardButton(text="⬅️ Batal", callback_data=f"schedule_edit:{schedule_id}"))
     return builder.as_markup()
-

@@ -20,12 +20,14 @@ from app.scheduler.reminder_scheduler import setup_scheduler
 from app.scheduler.schedule_reminder import register_schedule_reminder
 # pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger, setup_logging
+from app.config.settings import validate_required_settings
 
 logger = get_logger(__name__)
 
 
 async def main() -> None:
     setup_logging()
+    validate_required_settings()
     logger.info("Menjalankan Campus Assistant Bot...")
 
     bot = create_bot()

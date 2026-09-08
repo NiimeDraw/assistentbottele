@@ -10,10 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.states import AIStates
 from app.keyboards.schedule_kb import schedule_list_keyboard
 from app.keyboards.task_kb import task_list_keyboard
+from app.keyboards.dashboard_kb import build_dashboard_kb
 from app.models.user import User
 from app.services.schedule_service import ScheduleService
 from app.services.task_service import TaskService
 from app.utils.logger import get_logger
+from app.utils.html import quote
+from app.utils.telegram_helpers import safe_edit_or_send
 from aiogram.fsm.context import FSMContext
 
 # Import fungsi render teks yang sudah ada di masing-masing handler,
@@ -33,14 +36,30 @@ _PLACEHOLDER_FEATURES = {
 }
 
 
+def _dashboard_text(db_user: User) -> str:
+    first_name = (db_user.full_name.split()[0] if db_user.full_name else "User")
+    return (
+        f"Halo <b>{quote(first_name)}</b> 👋\n\n"
+        "🎓 <b>Campus Assistant</b>\n"
+        "Kelola tugas, jadwal, kalender akademik, nilai, dan catatanmu "
+        "dalam satu tempat.\n\n"
+        "Pilih fitur yang ingin dibuka:"
+    )
+
+
+@router.callback_query(F.data == "dashboard:home")
+async def dashboard_home(callback: CallbackQuery, db_user: User) -> None:
+    await safe_edit_or_send(callback, _dashboard_text(db_user), build_dashboard_kb())
+    await callback.answer()
+
+
 @router.callback_query(F.data == "dashboard:tugas")
 async def dashboard_tugas(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     service = TaskService(session)
     tasks = await service.list_tasks(db_user.id)
-    if callback.message:
-        await callback.message.answer(
-            await _render_task_list_text(tasks), reply_markup=task_list_keyboard(tasks)
-        )
+    await safe_edit_or_send(
+        callback, await _render_task_list_text(tasks), task_list_keyboard(tasks)
+    )
     await callback.answer()
 
 
@@ -48,10 +67,9 @@ async def dashboard_tugas(callback: CallbackQuery, session: AsyncSession, db_use
 async def dashboard_jadwal(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
     service = ScheduleService(session)
     schedules = await service.list_schedules(db_user.id)
-    if callback.message:
-        await callback.message.answer(
-            _render_schedule_list_text(schedules), reply_markup=schedule_list_keyboard(schedules)
-        )
+    await safe_edit_or_send(
+        callback, _render_schedule_list_text(schedules), schedule_list_keyboard(schedules)
+    )
     await callback.answer()
 
 

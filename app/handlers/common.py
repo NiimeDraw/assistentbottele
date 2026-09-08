@@ -39,17 +39,10 @@ async def cmd_start(message: Message, db_user: User) -> None:
     first_name = (db_user.full_name.split()[0] if db_user and db_user.full_name else "User")
     text = (
         f"Halo {quote(first_name)} 👋\n\n"
-        "Selamat datang di Campus Assistant.\n\n"
-        "Menu:\n\n"
-        "📚 Akademik\n\n"
-        "📝 Tugas\n\n"
-        "📅 Jadwal\n\n"
-        "📈 Nilai\n\n"
-        "💰 Keuangan\n\n"
-        "🤖 AI Assistant\n\n"
-        "📂 Dokumen\n\n"
-        "⚙ Pengaturan\n\n"
-        "Pilih menu di bawah untuk melanjutkan."
+        "🎓 <b>Campus Assistant</b>\n"
+        "Kelola tugas, jadwal, kalender akademik, nilai, dan catatanmu "
+        "dalam satu tempat.\n\n"
+        "Pilih fitur yang ingin dibuka:"
     )
     await message.answer(text, reply_markup=kb)
 

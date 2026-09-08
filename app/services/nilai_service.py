@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.nilai import Nilai
 from app.repositories.nilai_repository import NilaiRepository
 from app.utils.exceptions import NotFoundError, ValidationError
-from app.utils.validators import validate_non_empty
+from app.utils.validators import (
+    validate_grade,
+    validate_non_empty,
+    validate_positive_int,
+)
 
 
 class NilaiService:
@@ -24,12 +28,9 @@ class NilaiService:
         semester: int,
     ) -> Nilai:
         mata_kuliah = validate_non_empty(mata_kuliah, "Mata kuliah")
-        if sks <= 0:
-            raise ValidationError("SKS harus lebih dari 0.")
-        if nilai < 0 or nilai > 4.0:
-            raise ValidationError("Nilai harus antara 0.00 – 4.00.")
-        if semester <= 0:
-            raise ValidationError("Semester harus lebih dari 0.")
+        sks = validate_positive_int(sks, "SKS")
+        nilai = validate_grade(nilai)
+        semester = validate_positive_int(semester, "Semester")
 
         entry = Nilai(
             user_id=user_id,
@@ -112,10 +113,8 @@ class NilaiService:
           IPK_target = (IPK_sekarang × SKS_sekarang + X × sisa_sks) / (SKS_sekarang + sisa_sks)
           X = (IPK_target × (SKS_sekarang + sisa_sks) - IPK_sekarang × SKS_sekarang) / sisa_sks
         """
-        if target_ipk < 0 or target_ipk > 4.0:
-            raise ValidationError("Target IPK harus antara 0.00 – 4.00.")
-        if sisa_sks <= 0:
-            raise ValidationError("Sisa SKS harus lebih dari 0.")
+        target_ipk = validate_grade(target_ipk, "Target IPK")
+        sisa_sks = validate_positive_int(sisa_sks, "Sisa SKS")
 
         ipk_sekarang = await self.repo.get_ipk(user_id)
         if ipk_sekarang is None:
@@ -130,6 +129,7 @@ class NilaiService:
         ) / sisa_sks
 
         feasible = required_avg <= 4.0
+        required_avg_display = round(max(required_avg, 0), 2)
 
         return {
             "ipk_sekarang": ipk_sekarang,
@@ -137,10 +137,14 @@ class NilaiService:
             "target_ipk": target_ipk,
             "sisa_sks": sisa_sks,
             "total_sks_nanti": total_sks_nanti,
-            "required_avg": round(max(required_avg, 0), 2),
+            "required_avg": required_avg_display,
             "feasible": feasible,
             "message": (
-                f"✅ Mungkin! Anda perlu rata-rata {round(required_avg, 2)} per SKS."
+                (
+                    "✅ Target sudah tercapai. Pertahankan IPK saat ini."
+                    if required_avg <= 0
+                    else f"✅ Mungkin! Anda perlu rata-rata {required_avg_display} per SKS."
+                )
                 if feasible
                 else f"❌ Tidak mungkin. Dibutuhkan rata-rata {round(required_avg, 2)} (> 4.00)."
             ),
@@ -157,6 +161,13 @@ class NilaiService:
 
         rencana: list of {"mata_kuliah": str, "sks": int, "prediksi_nilai": float}
         """
+        if not rencana:
+            raise ValidationError("Minimal masukkan satu mata kuliah untuk diprediksi.")
+        for item in rencana:
+            validate_non_empty(item.get("mata_kuliah", ""), "Mata kuliah")
+            validate_positive_int(item.get("sks"), "SKS")
+            validate_grade(item.get("prediksi_nilai"), "Prediksi nilai")
+
         ipk_sekarang = await self.repo.get_ipk(user_id)
         sks_sekarang = await self.repo.get_total_sks(user_id)
 
@@ -179,6 +190,7 @@ class NilaiService:
             "tambahan_bobot": round(tambahan_bobot, 2),
             "total_sks": total_sks,
             "prediksi_ipk": prediksi_ipk,
+            "perubahan_ipk": round(prediksi_ipk - ipk_sekarang, 2),
         }
 
     # ── Grafik Perkembangan ───────────────────────────────

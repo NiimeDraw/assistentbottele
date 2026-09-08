@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.task import Task
+from app.keyboards.dashboard_kb import dashboard_button
 
 
 def task_list_keyboard(tasks: list[Task]) -> InlineKeyboardMarkup:
@@ -16,6 +17,7 @@ def task_list_keyboard(tasks: list[Task]) -> InlineKeyboardMarkup:
             )
         )
     builder.row(InlineKeyboardButton(text="➕ Tambah Tugas", callback_data="task_add"))
+    builder.row(dashboard_button())
     return builder.as_markup()
 
 

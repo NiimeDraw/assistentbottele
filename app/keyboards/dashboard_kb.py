@@ -8,6 +8,7 @@ BTN_KEUANGAN = "💰 Keuangan"
 BTN_AI = "🤖 AI Assistant"
 BTN_DOKUMEN = "📂 Dokumen"
 BTN_PENGATURAN = "⚙ Pengaturan"
+BTN_DASHBOARD = "🏠 Dashboard"
 
 
 def build_dashboard_kb() -> InlineKeyboardMarkup:
@@ -31,3 +32,8 @@ def build_dashboard_kb() -> InlineKeyboardMarkup:
     ])
 
     return kb
+
+
+def dashboard_button() -> InlineKeyboardButton:
+    """Tombol konsisten untuk kembali ke dashboard utama."""
+    return InlineKeyboardButton(text=BTN_DASHBOARD, callback_data="dashboard:home")

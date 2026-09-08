@@ -22,6 +22,8 @@ from app.services.academic_event_service import AcademicEventService
 from app.utils.logger import get_logger
 # pyrefly: ignore [missing-import]
 from app.utils.timezone_utils import now_local
+from app.config.settings import settings
+from app.utils.telegram_helpers import send_with_retry
 
 logger = get_logger(__name__)
 
@@ -46,14 +48,18 @@ async def check_and_send_academic_reminders(bot: Bot) -> None:
                 selisih_hari = (event.start_date - today).days
                 kapan = "hari ini" if selisih_hari == 0 else f"{selisih_hari} hari lagi"
                 lokasi_str = f"Lokasi: {quote(event.location)}" if event.location else ""
-                await bot.send_message(
-                    chat_id=user.telegram_id,
-                    text=(
-                        f"📅 <b>Pengingat Kalender Akademik!</b>\n\n"
-                        f"{emoji} <b>{event.event_type.value}</b>: {quote(event.title)}\n"
-                        f"Tanggal: {event.start_date.strftime('%d-%m-%Y')} ({kapan})\n"
-                        f"{lokasi_str}"
+                await send_with_retry(
+                    lambda: bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=(
+                            f"📅 <b>Pengingat Kalender Akademik!</b>\n\n"
+                            f"{emoji} <b>{event.event_type.value}</b>: {quote(event.title)}\n"
+                            f"Tanggal: {event.start_date.strftime('%d-%m-%Y')} ({kapan})\n"
+                            f"{lokasi_str}"
+                        ),
                     ),
+                    settings.REMINDER_SEND_RETRIES,
+                    settings.REMINDER_RETRY_DELAY_SECONDS,
                 )
                 event.reminder_sent = True
             except Exception:  # noqa: BLE001

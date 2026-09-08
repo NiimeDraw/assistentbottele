@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from app.models.academic_event import EVENT_TYPE_EMOJI, AcademicEvent, EventTypeEnum
+from app.keyboards.dashboard_kb import dashboard_button
 
 BULAN_ID = [
     "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -42,6 +43,7 @@ def academic_list_keyboard(
         InlineKeyboardButton(text="🔍 Cari Event", callback_data="akad_cari"),
         InlineKeyboardButton(text="➕ Tambah Event", callback_data="akad_add"),
     )
+    builder.row(dashboard_button())
     return builder.as_markup()
 
 

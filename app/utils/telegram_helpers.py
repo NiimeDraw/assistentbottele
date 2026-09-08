@@ -3,7 +3,10 @@
 Modul ini menyediakan fungsi utilitas terpusat untuk menangani
 callback query secara aman, menghindari duplikasi di seluruh handler.
 """
-from aiogram.exceptions import TelegramBadRequest
+import asyncio
+from collections.abc import Awaitable, Callable
+
+from aiogram.exceptions import TelegramBadRequest, TelegramNetworkError, TelegramRetryAfter
 from aiogram.types import CallbackQuery, Message
 
 
@@ -41,3 +44,23 @@ async def safe_answer(
         await callback.bot.send_message(
             callback.from_user.id, text, reply_markup=reply_markup
         )
+
+
+async def send_with_retry(
+    operation: Callable[[], Awaitable[object]],
+    retries: int,
+    delay_seconds: float,
+) -> object:
+    """Jalankan pengiriman Telegram ulang hanya untuk error yang transient."""
+    attempts = max(1, retries + 1)
+    for attempt in range(attempts):
+        try:
+            return await operation()
+        except TelegramRetryAfter as exc:
+            if attempt == attempts - 1:
+                raise
+            await asyncio.sleep(max(delay_seconds, float(exc.retry_after)))
+        except TelegramNetworkError:
+            if attempt == attempts - 1:
+                raise
+            await asyncio.sleep(delay_seconds)

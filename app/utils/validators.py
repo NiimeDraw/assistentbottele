@@ -1,5 +1,6 @@
 """Fungsi validasi input pengguna, dipakai di layer service sebelum data disimpan."""
 from datetime import time
+import math
 
 from app.utils.exceptions import ValidationError
 from app.utils.timezone_utils import attach_local_tz, now_local
@@ -81,4 +82,30 @@ def validate_optional_int(raw: str, field_name: str, min_value: int = 0) -> int 
         raise ValidationError(f"{field_name} harus berupa angka, atau ketik - untuk melewati.")
     if value < min_value:
         raise ValidationError(f"{field_name} tidak boleh kurang dari {min_value}.")
+    return value
+
+
+def validate_reminder_minutes(value: int | None) -> int | None:
+    """Validasi jeda pengingat jadwal dalam menit; None berarti tanpa pengingat."""
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValidationError("Pengingat harus berupa bilangan bulat dalam menit.")
+    if value < 0:
+        raise ValidationError("Pengingat tidak boleh bernilai negatif.")
+    return value or None
+
+
+def validate_positive_int(value: int, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValidationError(f"{field_name} harus berupa bilangan bulat positif.")
+    return value
+
+
+def validate_grade(value: float, field_name: str = "Nilai") -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValidationError(f"{field_name} harus berupa angka antara 0.00 dan 4.00.")
+    value = float(value)
+    if not math.isfinite(value) or not 0 <= value <= 4.0:
+        raise ValidationError(f"{field_name} harus antara 0.00 dan 4.00.")
     return value

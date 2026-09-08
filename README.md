@@ -9,7 +9,8 @@ harian: **Tugas**, **Jadwal Kuliah**, **Catatan**, dan **Tanya AI**.
   pengingat otomatis (background scheduler) sebelum deadline.
 - 🗓️ **Jadwal Kuliah** — simpan jadwal kuliah mingguan (hari, jam, ruangan).
 - 📝 **Catatan** — simpan catatan pribadi.
-- 🤖 **Tanya AI** — tanya apa saja seputar akademik, dijawab oleh OpenAI API.
+- 🤖 **Tanya AI** — tanya apa saja seputar akademik, dijawab melalui OpenRouter
+  atau provider yang kompatibel dengan OpenAI API.
 - 🔒 **Multi-user & isolasi data** — setiap pengguna hanya bisa mengakses datanya sendiri
   (difilter berdasarkan `user_id` internal, bukan `telegram_id` langsung).
 - ⌨️ Navigasi via **Reply Keyboard** (menu utama) & **Inline Keyboard** (aksi per item).
@@ -55,7 +56,7 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# lalu isi BOT_TOKEN, DATABASE_URL, OPENAI_API_KEY di file .env
+# lalu isi BOT_TOKEN, DATABASE_URL, dan OPENROUTER_API_KEY di file .env
 ```
 
 ### 4. Migrasi database
@@ -93,6 +94,11 @@ isolasi data multi-user.
 `REMINDER_CHECK_INTERVAL_MINUTES` menit, mencari tugas dengan deadline dalam
 `REMINDER_BEFORE_MINUTES` menit ke depan, lalu mengirim notifikasi ke pengguna terkait.
 
+Pengiriman reminder akan mencoba ulang gangguan jaringan sementara sesuai
+`REMINDER_SEND_RETRIES` dan `REMINDER_RETRY_DELAY_SECONDS`. Status reminder jadwal
+kuliah juga disimpan di database agar tidak terkirim ulang setelah bot restart;
+jalankan `alembic upgrade head` setelah memperbarui kode.
+
 ## 🧩 Menambah Fitur Baru
 
 1. Tambahkan model di `app/models/`
@@ -105,6 +111,8 @@ isolasi data multi-user.
 ## 📌 Catatan Teknis
 
 - Semua I/O (DB, Telegram API, OpenAI API) bersifat **asynchronous**.
+- AI dikonfigurasi melalui `AI_PROVIDER`. Nilai default `openrouter` menggunakan
+  `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, dan endpoint OpenRouter.
 - Error input pengguna ditangani via `AppError`/`ValidationError`/`NotFoundError`
   (`app/utils/exceptions.py`) dan ditangkap di layer handler untuk ditampilkan
   sebagai pesan ramah pengguna.

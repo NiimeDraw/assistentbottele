@@ -60,6 +60,7 @@ Thumbs.db
 
 # Telegram Bot / generated files
 instance/
+storage/
 
 # Secret files
 secret_key.txt

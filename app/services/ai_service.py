@@ -56,6 +56,53 @@ class AIService:
             logger.exception("Gagal memanggil OpenAI API")
             raise AppError("Terjadi kesalahan saat menghubungi layanan AI. Coba lagi nanti.") from exc
 
+    async def summarize_pdf(self, text: str, file_name: str) -> dict[str, str]:
+        """Ringkas teks PDF dan kembalikan lima bagian output yang konsisten."""
+        if not self._client:
+            raise AppError(
+                "Fitur AI belum dikonfigurasi. Isi API key provider AI di file .env."
+            )
+        text = (text or "").strip()
+        if not text:
+            raise AppError("PDF tidak memiliki teks yang bisa diringkas.")
+        prompt = (
+            "Ringkas dokumen PDF berikut dalam Bahasa Indonesia. Balas HANYA dengan format "
+            "JSON valid tanpa markdown, dengan keys persis: "
+            "short_summary, detailed_summary, key_points, important_terms, conclusion. "
+            "key_points dan important_terms harus berupa array string. "
+            f"Nama file: {file_name}\n\nDOKUMEN:\n{text}"
+        )
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": "Kamu adalah peringkas dokumen akademik yang teliti."},
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=4000,
+                response_format={"type": "json_object"},
+            )
+            import json
+
+            content = response.choices[0].message.content or "{}"
+            result = json.loads(content)
+            required = {
+                "short_summary", "detailed_summary", "key_points",
+                "important_terms", "conclusion",
+            }
+            if not required.issubset(result):
+                raise ValueError("Respons ringkasan tidak lengkap.")
+            return {
+                "short_summary": str(result["short_summary"]),
+                "detailed_summary": str(result["detailed_summary"]),
+                "key_points": json.dumps(result["key_points"], ensure_ascii=False),
+                "important_terms": json.dumps(result["important_terms"], ensure_ascii=False),
+                "conclusion": str(result["conclusion"]),
+            }
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Gagal meringkas PDF")
+            raise AppError("Ringkasan PDF gagal dibuat. Coba lagi nanti.") from exc
+
     @property
     def _model(self) -> str:
         provider = settings.AI_PROVIDER.strip().lower()

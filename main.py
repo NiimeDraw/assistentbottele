@@ -18,6 +18,7 @@ from app.scheduler.academic_reminder_scheduler import setup_academic_reminder_jo
 from app.scheduler.reminder_scheduler import setup_scheduler
 # pyrefly: ignore [missing-import]
 from app.scheduler.schedule_reminder import register_schedule_reminder
+from app.scheduler.pdf_summary_cleanup import register_pdf_summary_cleanup
 # pyrefly: ignore [missing-import]
 from app.utils.logger import get_logger, setup_logging
 from app.config.settings import validate_required_settings
@@ -37,6 +38,7 @@ async def main() -> None:
     # register schedule reminders & academic reminders onto the same scheduler
     register_schedule_reminder(scheduler, bot)
     setup_academic_reminder_job(scheduler, bot)
+    register_pdf_summary_cleanup(scheduler)
     scheduler.start()
     logger.info("Scheduler pengingat aktif (tugas, jadwal kuliah & kalender akademik).")
 

@@ -9,6 +9,9 @@ harian: **Tugas**, **Jadwal Kuliah**, **Catatan**, dan **Tanya AI**.
   pengingat otomatis (background scheduler) sebelum deadline.
 - 🗓️ **Jadwal Kuliah** — simpan jadwal kuliah mingguan (hari, jam, ruangan).
 - 📝 **Catatan** — simpan catatan pribadi.
+- 📂 **Dokumen** — upload dan kelola PDF, DOCX, PPT/PPTX, ZIP, serta gambar
+  berdasarkan semester, mata kuliah, dan kategori; tersedia pencarian, rename,
+  download, dan hapus.
 - 🤖 **Tanya AI** — tanya apa saja seputar akademik, dijawab melalui OpenRouter
   atau provider yang kompatibel dengan OpenAI API.
 - 🔒 **Multi-user & isolasi data** — setiap pengguna hanya bisa mengakses datanya sendiri
@@ -98,6 +101,17 @@ Pengiriman reminder akan mencoba ulang gangguan jaringan sementara sesuai
 `REMINDER_SEND_RETRIES` dan `REMINDER_RETRY_DELAY_SECONDS`. Status reminder jadwal
 kuliah juga disimpan di database agar tidak terkirim ulang setelah bot restart;
 jalankan `alembic upgrade head` setelah memperbarui kode.
+
+Dokumen disimpan pada folder `DOCUMENT_STORAGE_PATH` (default:
+`storage/documents`) dan metadata-nya disimpan di database. Ukuran maksimal
+default adalah 20 MB per file.
+
+Fitur **Ringkas PDF** mengunduh PDF ke penyimpanan sementara, mengekstrak teks
+dengan `pypdf`, melakukan chunking setiap 50 halaman untuk PDF di atas 100
+halaman, lalu mengirim hasil terstruktur ke provider AI. File PDF sementara
+dihapus oleh job cleanup setelah masa retensi (default satu jam); jika proses
+gagal, file langsung dihapus. Histori lima bagian ringkasan tetap tersimpan di
+database `pdf_summaries`.
 
 ## 🧩 Menambah Fitur Baru
 

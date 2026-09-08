@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     REMINDER_SEND_RETRIES: int = 2
     REMINDER_RETRY_DELAY_SECONDS: float = 2.0
 
+    # Penyimpanan dokumen
+    DOCUMENT_STORAGE_PATH: str = "storage/documents"
+    DOCUMENT_MAX_FILE_SIZE_MB: int = 20
+    PDF_SUMMARY_STORAGE_PATH: str = "storage/pdf_summaries"
+    PDF_SUMMARY_RETENTION_HOURS: int = 1
+    PDF_SUMMARY_CHUNK_PAGES: int = 50
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

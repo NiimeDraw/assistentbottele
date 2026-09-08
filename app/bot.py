@@ -8,6 +8,8 @@ from app.handlers import (
     ai_handlers,
     common,
     dashboard_handlers,
+    document_handlers,
+    pdf_summary_handlers,
     nilai_handlers,
     note_handlers,
     profile_handlers,
@@ -59,5 +61,7 @@ def create_dispatcher():
     dp.include_router(ai_handlers.router)
     dp.include_router(profile_handlers.router)
     dp.include_router(nilai_handlers.router)
+    dp.include_router(document_handlers.router)
+    dp.include_router(pdf_summary_handlers.router)
 
     return dp

@@ -61,3 +61,13 @@ class NilaiStates(StatesGroup):
     waiting_target_ipk = State()
     waiting_sisa_sks = State()
     waiting_prediksi_data = State()
+
+
+class DocumentStates(StatesGroup):
+    waiting_file = State()
+    waiting_semester = State()
+    waiting_course = State()
+    waiting_category = State()
+    waiting_search = State()
+    waiting_rename = State()
+    waiting_pdf_summary = State()

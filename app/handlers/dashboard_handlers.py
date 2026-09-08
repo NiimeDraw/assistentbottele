@@ -31,7 +31,6 @@ router = Router(name="dashboard")
 # bukan diam saja (silent) seperti sebelumnya.
 _PLACEHOLDER_FEATURES = {
     "keuangan": "💰 Keuangan",
-    "dokumen": "📂 Dokumen",
     "pengaturan": "⚙️ Pengaturan",
 }
 

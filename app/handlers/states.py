@@ -71,3 +71,4 @@ class DocumentStates(StatesGroup):
     waiting_search = State()
     waiting_rename = State()
     waiting_pdf_summary = State()
+    waiting_convert_format = State()

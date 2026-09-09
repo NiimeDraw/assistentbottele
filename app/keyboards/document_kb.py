@@ -31,5 +31,26 @@ def document_detail_keyboard(document_id: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="✏️ Rename", callback_data=f"document_rename:{document_id}"),
         InlineKeyboardButton(text="🗑️ Delete", callback_data=f"document_delete:{document_id}"),
     )
+    builder.row(InlineKeyboardButton(text="🔄 Convert", callback_data=f"document_convert:{document_id}"))
     builder.row(InlineKeyboardButton(text="⬅️ Kembali", callback_data="document_back"))
+    return builder.as_markup()
+
+
+def convert_format_keyboard(document_id: int, formats: list[str]) -> InlineKeyboardMarkup:
+    """Keyboard untuk memilih format target konversi."""
+    builder = InlineKeyboardBuilder()
+    format_labels = {
+        ".pdf": "📕 PDF",
+        ".jpg": "🖼️ JPG",
+        ".png": "🖼️ PNG",
+        ".docx": "📝 DOCX",
+        ".pptx": "📊 PPTX",
+    }
+    for fmt in formats:
+        label = format_labels.get(fmt, fmt.upper())
+        builder.row(InlineKeyboardButton(
+            text=label,
+            callback_data=f"document_convert_fmt:{document_id}:{fmt}"
+        ))
+    builder.row(InlineKeyboardButton(text="⬅️ Kembali", callback_data=f"document_detail:{document_id}"))
     return builder.as_markup()

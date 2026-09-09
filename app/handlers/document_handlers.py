@@ -11,10 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.handlers.states import DocumentStates
 from app.keyboards.dashboard_kb import BTN_DOKUMEN
-from app.keyboards.document_kb import document_detail_keyboard, document_list_keyboard
+from app.keyboards.document_kb import (
+    convert_format_keyboard,
+    document_detail_keyboard,
+    document_list_keyboard,
+)
 from app.models.document import Document
 from app.models.user import User
 from app.services.document_service import DocumentService
+from app.services.file_converter import convert_file, get_target_formats
 from app.utils.exceptions import AppError
 from app.utils.html import quote
 from app.utils.telegram_helpers import safe_answer, safe_edit_or_send
@@ -249,3 +254,71 @@ async def document_delete(callback: CallbackQuery, session: AsyncSession, db_use
         return
     await callback.answer("Dokumen dihapus 🗑️")
     await _show_documents(callback, session, db_user)
+
+
+# ── File Conversion ──────────────────────────────────────────────
+
+@router.callback_query(F.data.startswith("document_convert:"))
+async def document_convert_start(callback: CallbackQuery, session: AsyncSession, db_user: User) -> None:
+    """Tampilkan pilihan format target untuk konversi."""
+    document_id = int(callback.data.split(":")[1])
+    try:
+        document = await DocumentService(session).get_document(document_id, db_user.id)
+    except AppError as exc:
+        await callback.answer(exc.message, show_alert=True)
+        return
+    source_ext = Path(document.original_name).suffix.lower()
+    formats = get_target_formats(source_ext)
+    if not formats:
+        await callback.answer(
+            f"Format {source_ext} tidak dapat dikonversi.", show_alert=True
+        )
+        return
+    format_labels = {".pdf": "PDF", ".jpg": "JPG", ".png": "PNG", ".docx": "DOCX", ".pptx": "PPTX"}
+    format_names = ", ".join(format_labels.get(f, f) for f in formats)
+    text = (
+        f"🔄 <b>Konversi File</b>\n\n"
+        f"📄 {quote(document.original_name)}\n"
+        f"Format saat ini: <b>{source_ext.upper()}</b>\n\n"
+        f"Pilih format target ({format_names}):"
+    )
+    await safe_edit_or_send(callback, text, convert_format_keyboard(document.id, formats))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("document_convert_fmt:"))
+async def document_convert_execute(
+    callback: CallbackQuery, session: AsyncSession, db_user: User, bot: Bot
+) -> None:
+    """Eksekusi konversi file dan kirim hasilnya."""
+    parts = callback.data.split(":")
+    document_id = int(parts[1])
+    target_ext = parts[2]
+    try:
+        document = await DocumentService(session).get_document(document_id, db_user.id)
+    except AppError as exc:
+        await callback.answer(exc.message, show_alert=True)
+        return
+    source_path = document.storage_path
+    if not Path(source_path).is_file():
+        await callback.answer("File sumber tidak ditemukan.", show_alert=True)
+        return
+    await callback.answer("⏳ Mengonversi file...")
+    try:
+        result = convert_file(source_path, target_ext)
+    except AppError as exc:
+        await safe_answer(callback, f"⚠️ Gagal konversi: {exc.message}")
+        return
+    output_paths = result if isinstance(result, list) else [result]
+    for out_path in output_paths:
+        if not Path(out_path).is_file():
+            continue
+        await bot.send_document(
+            chat_id=callback.from_user.id,
+            document=FSInputFile(out_path),
+            caption=f"✅ Hasil konversi: {Path(out_path).name}",
+        )
+    await safe_answer(
+        callback,
+        f"✅ Konversi selesai! {len(output_paths)} file dikirim.",
+    )
